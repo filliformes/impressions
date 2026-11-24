@@ -11,7 +11,7 @@ import { initMaterials, M, mesh, disposeTree } from './util.js';
 import { SILICONE, INSTR, FT, DRIVER, PROJ } from './data.js';
 import { STANDS } from './stands.js';
 import { buildAssembly, person, PAD_OFF } from './assembly.js';
-import { ECRANS, buildSpace, optics } from './space.js';
+import { buildSpace, optics, diamMax } from './space.js';
 import { drawPlan, drawElev, drawTable, drawSignal, drawChoix } from './fiche.js';
 
 const $=(q,r=document)=>r.querySelector(q), V=(x,y,z)=>new THREE.Vector3(x,y,z);
@@ -20,12 +20,12 @@ const fr=(v,d=0)=>v.toLocaleString('fr-CA',{minimumFractionDigits:d,maximumFract
 export const S = {
   tab:'espace', stand:'A', mic:'bras', open:false, silicone:'bleu', padH:980, nom:'RES',
   mode:'un', eclate:0, xray:false, cotesI:false, figure:false,
-  ecran:'bord', proj:'cmz50', diam:5, ecranH:800, ecart:500, salle:9, vue:'ensemble', public:true, cables:true, faisceau:false, coupe:false, cotesE:false, service:false
+  proj:'epson', diam:5, ecranH:950, ecart:450, salle:9, lum:60, vue:'ensemble', public:true, cables:true, faisceau:false, coupe:false, cotesE:false
 };
 const DEF={...S};
-const KEYS={tab:'t',stand:'s',mic:'m',open:'g',silicone:'c',padH:'p',nom:'n',mode:'d',ecran:'e',proj:'j',diam:'o',ecranH:'h',ecart:'a',salle:'r',vue:'v',xray:'x'};
+const KEYS={tab:'t',stand:'s',mic:'m',open:'g',silicone:'c',padH:'p',nom:'n',mode:'d',lum:'l',proj:'j',diam:'o',ecranH:'h',ecart:'a',salle:'r',vue:'v',xray:'x'};
 (function readHash(){ const q=new URLSearchParams(location.hash.slice(1)); for(const k in KEYS){ const v=q.get(KEYS[k]); if(v===null) continue; const t=typeof DEF[k]; S[k]=t==='number'?(+v||DEF[k]):t==='boolean'?v==='1':v; }
-  if(!STANDS[S.stand]) S.stand='A'; if(!ECRANS[S.ecran]) S.ecran='bord'; if(!PROJ[S.proj]) S.proj='cmz50'; if(!SILICONE[S.silicone]) S.silicone='bleu'; if(!INSTR[S.nom]) S.nom='RES'; })();
+  if(!STANDS[S.stand]) S.stand='A'; if(!PROJ[S.proj]) S.proj='epson'; if(!SILICONE[S.silicone]) S.silicone='bleu'; if(!INSTR[S.nom]) S.nom='RES'; })();
 function writeHash(){ const q=new URLSearchParams(); for(const k in KEYS) if(S[k]!==DEF[k]) q.set(KEYS[k],typeof S[k]==='boolean'?(S[k]?1:0):S[k]); const h=q.toString(); history.replaceState(null,'',h?'#'+h:location.pathname+location.search); }
 
 // ---------------------------------------------------------------- rendu
@@ -46,12 +46,13 @@ const fill=new THREE.DirectionalLight('#dfe6ff',.42); fill.position.set(-2.5,1.6
 const rimL=new THREE.DirectionalLight('#ffffff',.9); rimL.position.set(-1,2,-3); studio.add(rimL);
 const ground=new THREE.Mesh(new THREE.CircleGeometry(9,64).rotateX(-Math.PI/2),new THREE.ShadowMaterial({opacity:.3})); ground.receiveShadow=true; studio.add(ground);
 // salle
-const room=new THREE.Scene(); room.environment=env; room.environmentIntensity=.05; room.background=new THREE.Color('#07080c');
-const hemi=new THREE.HemisphereLight('#9fb0ff','#191820',.5); room.add(hemi);
+const room=new THREE.Scene(); room.environment=env; room.environmentIntensity=.05; room.background=new THREE.Color('#0a0a0c');
+const hemi=new THREE.HemisphereLight('#ffffff','#e2e2df',1); room.add(hemi);
+const sky=new THREE.DirectionalLight('#ffffff',1); sky.position.set(1.2,5,1.6); sky.castShadow=true; sky.shadow.mapSize.set(2048,2048); sky.shadow.radius=9; sky.shadow.bias=-.0004; sky.shadow.normalBias=.012; Object.assign(sky.shadow.camera,{left:-5,right:5,top:5,bottom:-5,near:.5,far:9}); room.add(sky);
 
 const cam=new THREE.PerspectiveCamera(34,1,.03,60), ctl=new OrbitControls(cam,cv); ctl.enableDamping=true; ctl.dampingFactor=.08; ctl.maxPolarAngle=Math.PI*.515; ctl.minDistance=.25; ctl.maxDistance=16;
-let comp=null,bloom=null,compS=null,ao=null;
-function makeComposer(w,h,pr){ const rt=new THREE.WebGLRenderTarget(w*pr,h*pr,{type:THREE.HalfFloatType,samples:4}); comp=new EffectComposer(R,rt); comp.setPixelRatio(pr); comp.setSize(w,h); comp.addPass(new RenderPass(room,cam)); bloom=new UnrealBloomPass(new THREE.Vector2(w,h),.2,.6,.92); comp.addPass(bloom); comp.addPass(new OutputPass());
+let comp=null,bloom=null,compS=null,ao=null,aoR=null;
+function makeComposer(w,h,pr){ const rt=new THREE.WebGLRenderTarget(w*pr,h*pr,{type:THREE.HalfFloatType,samples:4}); comp=new EffectComposer(R,rt); comp.setPixelRatio(pr); comp.setSize(w,h); comp.addPass(new RenderPass(room,cam)); aoR=new GTAOPass(room,cam,w,h); aoR.updateGtaoMaterial({radius:.3,distanceExponent:1.3,thickness:.8,scale:1.1,samples:16,screenSpaceRadius:false}); aoR.updatePdMaterial({lumaPhi:10,depthPhi:2,normalPhi:3,radius:7,rings:2,samples:16}); comp.addPass(aoR); bloom=new UnrealBloomPass(new THREE.Vector2(w,h),.2,.6,.92); comp.addPass(bloom); comp.addPass(new OutputPass());
   const rt2=rt.clone(); compS=new EffectComposer(R,rt2); compS.setPixelRatio(pr); compS.setSize(w,h); compS.addPass(new RenderPass(studio,cam)); ao=new GTAOPass(studio,cam,w,h); ao.updateGtaoMaterial({radius:.09,distanceExponent:1.2,thickness:.6,scale:1.15,samples:16,screenSpaceRadius:false}); ao.updatePdMaterial({lumaPhi:10,depthPhi:2,normalPhi:3,radius:6,rings:2,samples:16}); compS.addPass(ao); compS.addPass(new OutputPass()); }
 
 // ---------------------------------------------------------------- scènes
@@ -83,18 +84,18 @@ function buildRoom(){
 function applyRoom(){
   clear(roomExtra); if(!space) return;
   space.visitors.visible=S.public&&S.vue!=='instrument'&&S.vue!=='coupe'; space.players.visible=S.public&&S.vue!=='instrument'; space.players.children[0].visible=S.vue!=='joueur'; space.op.visible=S.public&&S.vue!=='regie'; space.cables.visible=S.cables; space.setBeams(S.faisceau||S.coupe); space.setCut(S.coupe);
-  hemi.intensity=S.service?2.2:.5; room.environmentIntensity=S.service?.35:.07; space.screenMat.uniforms.uGain.value=S.service?.85:1;
+  const l=S.lum/100; hemi.intensity=.1+l*.95; room.environmentIntensity=.04+l*.24; sky.intensity=l*1.75; sky.castShadow=l>.02; space.lights.forEach(p=>p.intensity=14*(1-l*.75)); room.background.setScalar(.03+l*.8); space.tubes.color.setScalar(.08+l*1.1); space.screenMat.uniforms.uGain.value=1.05; space.screenMat.uniforms.uAmb.value=l; space.lumGlow=1.1-.85*l;
   const i=space.info, g=roomExtra;
   if(S.cotesE){
-    const col='#ff8f7a', y=i.H+.02;
-    dim(g,V(-i.R,y,0),V(i.R,y,0),`${fr(S.diam,1)} pi  (${fr(i.R*2,2)} m)`,col,V(0,0,.05));
-    space.inst.forEach(a=>{ const s=Math.sin(a.angle),c=Math.cos(a.angle); dim(g,V(s*i.R,.03,c*i.R),V(s*(i.Rr-.16),.03,c*(i.Rr-.16)),fr(S.ecart),col,V(c*.04,0,-s*.04)); });
+    const col='#c4232c', y=i.H+.02;
+    dim(g,V(-i.R,y,0),V(i.R,y,0),`image ${fr(S.diam,2)} pi  (${fr(i.R*2,2)} m)`,col,V(0,0,.05)); dim(g,V(-i.Rb,.04,i.Rb+.1),V(i.Rb,.04,i.Rb+.1),`socle ${fr(i.Rb*2,2)} m`,col,V(0,0,.05));
+    space.inst.forEach(a=>{ const s=Math.sin(a.angle),c=Math.cos(a.angle); dim(g,V(s*i.Rb,.03,c*i.Rb),V(s*(i.Rr-.16),.03,c*(i.Rr-.16)),fr(S.ecart),col,V(c*.04,0,-s*.04)); });
     const p=space.inst.map(a=>V(Math.sin(a.angle)*i.Rr,.03,Math.cos(a.angle)*i.Rr)); p.forEach((q,k)=>dim(g,q,p[(k+1)%3],fr(i.dist,2)+' m',col,V(0,.04,0)));
-    dim(g,V(i.R+.12,0,0),V(i.R+.12,i.H,0),fr(S.ecranH),col,V(.04,0,0));
+    dim(g,V(i.Rb+.12,0,0),V(i.Rb+.12,i.H,0),fr(S.ecranH),col,V(.04,0,0));
   }
   space.inst.filter((a,k)=>!(S.coupe&&k===1)).forEach(a=>label(a.nom,V(Math.sin(a.angle)*i.Rr,S.padH/1000+.16,Math.cos(a.angle)*i.Rr),'n',g));
   if(S.cables||S.coupe) label('Régie : Palinopsia',space.regie.position.clone().setY(1.42),'',g);
-  if(S.coupe||S.faisceau) label(S.ecran==='bord'?PROJ[S.proj].nom:'Projecteur, objectif fisheye',S.ecran==='bord'?V(0,i.H+.06,-(i.R+.2)):V(0,.1,.2),'',g);
+  if(S.coupe||S.faisceau) { const f=space.O.f; if(f){ label(PROJ[S.proj].nom,V(0,f.z0+.2,(f.bx0+f.bx1)/2),'',g); label(`Miroir ${fr(f.ml*1000)} × ${fr(f.mw*1000)}`,V(0,f.m2[1]+.06,f.m2[0]),'',g); } };
 }
 
 // ---------------------------------------------------------------- caméras
@@ -138,10 +139,12 @@ function panel(){
     const d=grp(S.mode==='un'?'Chiffres':'Exporter','<dl class="kv" id="ro"></dl>'); const b=el('<button class="btn" type="button">Télécharger le modèle (GLB)</button>'); b.onclick=exportGLB; d.append(b);
   } else {
     grp('Vue',seg('vue',{ensemble:'Ensemble',joueur:'Joueur',instrument:'Instrument',coupe:'Coupe',plan:'Dessus',regie:'Régie'},()=>{ viewRoom(); writeHash(); }));
-    grp('Écran',seg('ecran',Object.fromEntries(Object.entries(ECRANS).map(([k,v])=>[k,v.nom])),reE),`<p class="desc">${ECRANS[S.ecran].court}</p>`,S.ecran==='bord'?Object.assign(seg('proj',Object.fromEntries(Object.entries(PROJ).map(([k,v])=>[k,v.nom])),reE),{style:'margin-top:8px'}):null,
-      rng('diam','Diamètre',4,7,.25,v=>`${fr(v,2)} pi (${fr(v*FT,2)} m)`,reE),rng('ecranH','Hauteur de la toile',550,1100,10,mm,reE),rng('ecart','Écart écran, instrument',250,1200,50,mm,reE),rng('salle','Côté de la salle',7,12,.5,v=>fr(v,1)+' m',reE));
+    const dm=diamMax(S); if(S.diam>dm) S.diam=dm;
+    grp('Projecteur',seg('proj',Object.fromEntries(Object.entries(PROJ).map(([k,v])=>[k,v.nom])),()=>{ const d=diamMax(S); if(S.diam>d) S.diam=d; reE(); }),`<p class="desc">${PROJ[S.proj].source}, ${PROJ[S.proj].bruit}. À plat dans le socle, miroir à 45°.</p>`);
+    grp('Disque',rng('diam','Image',3,dm,.25,v=>`${fr(v,2)} pi (${fr(v*FT,2)} m)`,reE),rng('ecranH','Hauteur de la toile',850,980,10,mm,()=>{ const d=diamMax(S); if(S.diam>d) S.diam=d; reE(); panel(); },false),rng('ecart','Écart socle, instrument',250,1200,50,mm,reE));
+    grp('Galerie',rng('salle','Côté de la salle',6,12,.5,v=>fr(v,1)+' m',reE),rng('lum','Lumière de la salle',0,100,5,v=>v+' %',()=>{ applyRoom(); writeHash(); }));
     grp('Instruments',seg('stand',Object.fromEntries(Object.entries(STANDS).map(([k,v])=>[k,v.nom])),reE),Object.assign(seg('mic',{bras:'Bras articulé',pied:'Pied de micro'},reE),{style:'margin-top:8px'}),Object.assign(seg('open',{false:'Grilles',true:'Membranes'},reE),{style:'margin-top:8px'}),'<div style="height:10px"></div>',sil);
-    grp('Montrer',tog([['public','Le public',applyRoom],['cables','Les câbles',applyRoom],['faisceau','Le faisceau',applyRoom],['cotesE','Les cotes',applyRoom],['service','Lumière de service',applyRoom]]));
+    grp('Montrer',tog([['public','Le public',applyRoom],['cables','Les câbles',applyRoom],['faisceau','Le faisceau',applyRoom],['cotesE','Les cotes',applyRoom]]));
     grp('Optique',`<dl class="kv" id="ro"></dl>`);
   }
   readout(); P.scrollTop=top;
@@ -151,8 +154,8 @@ function readout(){
   if(S.tab==='instrument'){ if(S.mode!=='un'){ d.innerHTML=''; return; } const i=asm[0]?.info; if(!i) return;
     d.innerHTML=row('Hauteur du stand',mm(i.Hs*1000))+row('Emprise au sol',`${i.encombrement[0]} × ${i.encombrement[1]} mm`)+row('Corps, largeur × prof.',`${i.corps[0]} × ${i.corps[1]} mm`)+row('Volume par haut-parleur',`≈ ${fr(i.vol/2,0)} L`)+row('Masse totale',`≈ ${fr(i.kg)} kg`)+row('Force qui fait basculer',`≈ ${fr(i.bascule,-0)} N`,i.bascule<110);
   } else { const o=optics(S);
-    if(S.ecran==='fisheye') d.innerHTML=row('Lentille, toile',`${fr(o.d*100)} cm`)+row('Angle de champ requis',`${fr(2*o.theta)}°`,o.theta>60)+row('Lumière au bord / au centre',`${fr(o.bord*100)} %`,o.bord<.2)+row('Pixel au centre / au bord',`${fr(o.pxC,1)} / ${fr(o.pxB,1)} mm`,o.pxB>4);
-    else d.innerHTML=row('Image du projecteur',`${fr(o.diag)} po (${fr(o.P.min)} à ${fr(o.P.max)})`,!o.ok)+row('Disque maximal',`${fr(o.dmax,1)} pi`,S.diam>o.dmax)+row('Hauteur requise sous la toile',`${fr((o.haut+.05)*100)} cm`,!o.rentre)+row('Saillie hors du disque',`${fr(o.saillie*100)} cm${o.P.sur?'':' *'}`)+row('Pixel',`${fr(o.px,1)} mm`)+row('Éclairement de la toile',`≈ ${fr(Math.round(o.lux/50)*50)} lx`)+row('Incidence au bord opposé',`${fr(o.inc)}°`)+row('Prix repéré',o.P.prix)+(o.P.sur?'':'<dt style="grid-column:1/-1">* décalage estimé, absent des fiches lues</dt>');
+    const f=o.f; if(!f) d.innerHTML=row('Montage','impossible',true);
+    else d.innerHTML=row('Socle',`Ø ${fr(o.Rb*2,2)} m (${fr(o.Rb*2/FT,1)} pi)`)+row('Anneau blanc autour',`${fr(o.rim*100)} cm`)+row('Objectif à la toile',`${fr(f.T*100)} cm de trajet`)+row('Miroir',`${fr(f.ml*100)} × ${fr(f.mw*100)} cm`)+row('Décentrement',`${fr(Math.abs(f.sh/f.Di)*100)} %`)+row('Pixel',`${fr(o.px,1)} mm`)+row('Éclairement de la toile',`≈ ${fr(Math.round(o.lux/50)*50)} lx`)+row('Incidence maximale',`${fr(o.inc)}°`);
     d.innerHTML+=row('Distance entre instruments',`${fr(space?.info.dist||0,2)} m`);
   }
 }
@@ -190,8 +193,8 @@ function step(now){
   } else if(space){
     const u=space.screenMat.uniforms; u.uT.value=t; const hw=space.info.RW/2-.05; space.walls.children.forEach((w,i)=>{ w.visible=[cam.position.z>-hw,cam.position.z<hw,cam.position.x>-hw,cam.position.x<hw][i]; });
     space.inst.forEach((a,i)=>{ // les joueurs bougent doucement leur instrument
-      const q=S.public?1:0; a.set.rx=q*.035*Math.sin(t*(.7+i*.13)+i*2); a.set.rz=q*.045*Math.sin(t*(.5+i*.17)+i*4); a.apply(); a.oled.draw(a.nom,t,[-a.set.rz,a.set.rx]); u.uE.value.setComponent(i,.35+.4*Math.abs(Math.sin(t*(.5+i*.17)+i*4))); space.glow[i].intensity=(2.3)*(.85+.25*Math.sin(t*(.6+i*.3)+i)); });
-    if(S.service){ bloom.strength=.05; } else bloom.strength=.2;
+      const q=S.public?1:0; a.set.rx=q*.035*Math.sin(t*(.7+i*.13)+i*2); a.set.rz=q*.045*Math.sin(t*(.5+i*.17)+i*4); a.apply(); a.oled.draw(a.nom,t,[-a.set.rz,a.set.rx]); u.uE.value.setComponent(i,.35+.4*Math.abs(Math.sin(t*(.5+i*.17)+i*4))); space.glow[i].intensity=2.3*(space.lumGlow??1)*(.85+.25*Math.sin(t*(.6+i*.3)+i)); });
+    bloom.strength=.2*(1-S.lum/100); aoR.enabled=!space.beams.visible&&S.vue!=='coupe'; space.ceil.visible=space.tubeG.visible=cam.position.y<3.7;
     comp.render(dt); L2.render(room,cam);
   }
 }

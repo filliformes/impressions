@@ -27,7 +27,7 @@ Chaque instrument tourne sur [Pandore](https://github.com/filliformes/pandore) e
 
 ## L'espace
 
-Un disque horizontal de 5 pi (1,52 m), rétroprojeté par en dessous. Un seul projecteur ultra-courte focale se tient debout au bord du disque ; le socle devient une goutte qui le cache. La version fisheye au centre reste dans la maquette pour comparaison. L'onglet Espace calcule l'image, le dégagement et la lumière selon le modèle choisi.
+Une galerie blanche. Un disque horizontal de 5 pi (1,52 m), rétroprojeté par en dessous, dans un socle rond en tôle blanche. Le projecteur est à plat dans le socle et tire vers un miroir à 45°. La maquette cherche le plus petit socle sans ombre portée, selon le projecteur, le diamètre et la hauteur de la toile.
 
 ![Coupe](img/coupe.jpg)
 

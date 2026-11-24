@@ -22,17 +22,15 @@ nav button[aria-selected=true]{color:var(--encre);border-bottom-color:var(--roug
 
 main{flex:1;min-height:0;position:relative}
 #stage{position:absolute;inset:0;overflow:hidden;background:radial-gradient(120% 90% at 50% 35%,#f4f4f2 0,#d2d2d0 60%,#a9a9a8 100%)}
-body[data-tab=espace] #stage{background:#07080c}
+body[data-tab=espace] #stage{background:#d9d9d7}
 #stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
 #stage.tilt canvas{cursor:move}
 #labels{position:absolute;inset:0;pointer-events:none}
 #labels>div{position:absolute!important;inset:0}
 .lb{font:500 12px/1.25 var(--f);color:var(--encre);background:var(--tole);padding:3px 8px;white-space:nowrap;font-variant-numeric:tabular-nums;border:1px solid var(--ligne)}
 .lb.q{background:none;border:0;font-weight:600;padding:0 3px;color:#191c34;text-shadow:0 0 4px #fff,0 0 4px #fff,0 0 8px #fff}
-body[data-tab=espace] .lb.q{color:#fff;text-shadow:0 0 4px #000,0 0 6px #000}
 .lb.n{background:var(--silicone);color:#fff;border-color:transparent;font-weight:600}
 #hint{position:absolute;left:20px;bottom:14px;margin:0;font-size:13px;color:#50525f;pointer-events:none}
-body[data-tab=espace] #hint{color:#a4a7b8}
 #load{position:absolute;inset:0;display:grid;place-items:center;margin:0;color:#8b8e9c;pointer-events:none;transition:opacity .4s}
 #load.ok{opacity:0}
 

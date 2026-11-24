@@ -2,31 +2,29 @@
 import { FT, INSTR, DRIVER, PROJ } from './data.js';
 import { STANDS, buildStand } from './stands.js';
 import { PAD_OFF } from './assembly.js';
-import { optics, ECRANS, outline } from './space.js';
+import { optics } from './space.js';
 
 const fr=(v,d=0)=>v.toLocaleString('fr-CA',{minimumFractionDigits:d,maximumFractionDigits:d});
 const INK='#191c34', BLUE='#333a7c', RED='#c4232c', GREY='#8a8c98', LINE='#c9c9c4';
 
 export function drawPlan(box,S){
-  const R=S.diam*FT/2, Rr=R+S.ecart/1000+.16, W=S.salle, k=100, m=95, w=W*k, o=[];
+  const R=S.diam*FT/2, O=optics(S), F=O.f, Rr=O.Rb+S.ecart/1000+.16, W=S.salle, k=100, m=95, w=W*k, o=[];
   const X=x=>(x+W/2)*k, Y=z=>(z+W/2)*k;
   o.push(`<rect x="0" y="0" width="${w}" height="${w}" fill="#fff" stroke="${INK}" stroke-width="3"/>`);
   for(let i=1;i<W;i++) o.push(`<path d="M${i*k} 0V${w}M0 ${i*k}H${w}" stroke="${LINE}" stroke-width=".7"/>`);
   o.push(`<circle cx="${X(0)}" cy="${Y(0)}" r="${Rr*k}" fill="none" stroke="${GREY}" stroke-dasharray="6 6"/>`);
   // tronc
-  o.push(`<path d="M${X(0)} ${Y(0)}L${X(-W/2+1.6)} ${Y(-W/2+1.6)}" stroke="${RED}" stroke-width="3"/>`);
-  const O=optics(S), bord=S.ecran==='bord';
-  o.push(`<path d="M${outline(O,bord).map(p=>`${X(p[0]).toFixed(1)} ${Y(p[1]).toFixed(1)}`).join('L')}z" fill="#fff" stroke="${INK}" stroke-width="2"/><circle cx="${X(0)}" cy="${Y(0)}" r="${R*k}" fill="${BLUE}" fill-opacity=".14" stroke="${BLUE}" stroke-width="3"/>`);
-  if(bord){ const zt=-(O.imgH/2+O.Hd); o.push(`<rect x="${X(-O.P.w/2)}" y="${Y(zt-O.P.t)}" width="${O.P.w*k}" height="${O.P.t*k}" fill="${INK}"/><rect x="${X(-O.imgW/2)}" y="${Y(-O.imgH/2)}" width="${O.imgW*k}" height="${O.imgH*k}" fill="none" stroke="${RED}" stroke-dasharray="5 5"/><text x="${X(O.imgW/2)+8}" y="${Y(O.imgH/2)+2}" font-size="16">image</text>`); }
-  else o.push(`<rect x="${X(-.18)}" y="${Y(-.18)}" width="36" height="36" fill="${INK}"/><circle cx="${X(0)}" cy="${Y(0)}" r="8" fill="#fff"/>`);
+  o.push(`<path d="M${X(-O.Rb*.7)} ${Y(-O.Rb*.7)}L${X(-W/2+1.6)} ${Y(-W/2+1.6)}" stroke="${RED}" stroke-width="3"/>`);
+  o.push(`<circle cx="${X(0)}" cy="${Y(0)}" r="${O.Rb*k}" fill="#fff" stroke="${INK}" stroke-width="2"/><circle cx="${X(0)}" cy="${Y(0)}" r="${R*k}" fill="${BLUE}" fill-opacity=".14" stroke="${BLUE}" stroke-width="3"/>`);
+  if(F) o.push(`<rect x="${X(-O.P.w/2)}" y="${Y(F.bx0)}" width="${O.P.w*k}" height="${(F.bx1-F.bx0)*k}" fill="none" stroke="${INK}" stroke-dasharray="5 4" stroke-width="1.6"/><rect x="${X(-F.mw/2)}" y="${Y(F.m1[0])}" width="${F.mw*k}" height="${(F.m2[0]-F.m1[0])*k}" fill="none" stroke="${RED}" stroke-dasharray="5 4" stroke-width="1.6"/>`);
   Object.keys(INSTR).forEach((n,i)=>{ const a=i*Math.PI*2/3, s=Math.sin(a), c=Math.cos(a), x=X(s*Rr), y=Y(c*Rr), deg=-a*180/Math.PI;
-    o.push(`<path d="M${X(s*R*.2)} ${Y(c*R*.2)}L${X(s*(Rr-.15))} ${Y(c*(Rr-.15))}" stroke="${RED}" stroke-width="2"/>`);
+    o.push(`<path d="M${X(s*O.Rb)} ${Y(c*O.Rb)}L${X(s*(Rr-.15))} ${Y(c*(Rr-.15))}" stroke="${RED}" stroke-width="2"/>`);
     o.push(`<g transform="translate(${x} ${y}) rotate(${deg})"><rect x="-23" y="-23" width="46" height="46" fill="#fff" stroke="${INK}" stroke-width="1.5"/><rect x="-13.3" y="-9" width="26.6" height="18" fill="${BLUE}"/><path d="M16 -11l16 -8v38l-16 -8zM-16 -11l-16 -8v38l16 -8z" fill="${INK}"/><path d="M38 0h52m-10 -6l10 6l-10 6M-38 0h-52m10 -6l-10 6l10 6" fill="none" stroke="${GREY}" stroke-width="1.6"/><circle cx="0" cy="52" r="20" fill="none" stroke="${GREY}" stroke-width="2"/></g>`);
     o.push(`<text x="${X(s*(Rr+1.32))}" y="${Y(c*(Rr+1.2))+8}" text-anchor="middle" font-size="24" font-weight="700">${n}</text>`); });
   o.push(`<g transform="translate(${X(-W/2+1.35)} ${Y(-W/2+1.35)}) rotate(-45)"><rect x="-80" y="-35" width="160" height="70" fill="#fff" stroke="${INK}" stroke-width="2"/><text y="7" text-anchor="middle" font-size="20" font-weight="600">Régie</text></g>`);
-  o.push(`<text x="${X(-R)-14}" y="${Y(.45)}" text-anchor="end" font-size="18" font-weight="600" fill="${BLUE}">Ø ${fr(S.diam,2)} pi · ${fr(2*R,2)} m</text>`);
-  o.push(`<text x="${X(.2)}" y="${Y(R+.28)}" font-size="19">${fr(S.ecart)} mm</text>`);
-  o.push(`<text x="${w/2}" y="${w+38}" text-anchor="middle" font-size="20">Salle ${fr(W,1)} × ${fr(W,1)} m, quadrillage de 1 m. ${ECRANS[S.ecran].nom}${bord?' : '+PROJ[S.proj].nom:''}.</text><text x="${w/2}" y="${w+68}" text-anchor="middle" font-size="20">Instruments à ${fr(2*Rr*Math.sin(Math.PI/3),2)} m l’un de l’autre, centre à centre.</text>`);
+  o.push(`<text x="${X(-O.Rb)-12}" y="${Y(.5)}" text-anchor="end" font-size="18" font-weight="600" fill="${BLUE}">image ${fr(S.diam,2)} pi · ${fr(2*R,2)} m</text>`);
+  o.push(`<text x="${X(.2)}" y="${Y(O.Rb+.28)}" font-size="19">${fr(S.ecart)} mm</text>`);
+  o.push(`<text x="${w/2}" y="${w+38}" text-anchor="middle" font-size="20">Salle ${fr(W,1)} × ${fr(W,1)} m, quadrillage de 1 m. Socle Ø ${fr(O.Rb*2,2)} m, ${PROJ[S.proj].nom}.</text><text x="${w/2}" y="${w+68}" text-anchor="middle" font-size="20">Instruments à ${fr(2*Rr*Math.sin(Math.PI/3),2)} m l’un de l’autre, centre à centre.</text>`);
   box.innerHTML=`<svg viewBox="-10 -10 ${w+20} ${w+m}" style="max-width:860px;margin:auto" role="img" aria-label="Plan de l’espace">${o.join('')}</svg>`;
 }
 
@@ -77,15 +75,15 @@ export function drawSignal(box){
 }
 
 export function drawChoix(box,S){
-  const o=optics(S), f=optics({...S,diam:S.diam}), g=optics({...S,diam:7});
+  const o=optics(S), e=optics({...S,proj:'epson',diam:5,ecranH:950}), h=optics({...S,proj:'ht2150',diam:3.75,ecranH:950}), cm=v=>fr(v*100);
   const Q=[
-   ['Le projecteur',[`Choix proposé : un seul ultra-courte focale, debout au bord du disque, image vers le haut. Le Panasonic PT-CMZ50 est le mieux documenté : sa fiche donne « free 360-degree installation » et une table de distances complète. Il couvre un disque de 5 pi (1,52 m) avec 64 cm de dégagement sous la toile, au plus 5,2 pi.`,
-     `L’Optoma ZU600UST et le Ricoh UHL3660 (4K) montent à environ 6,4 pi, avec une toile à environ 90 cm du sol. Leur décalage n’est pas dans les fiches lues : à mesurer sur l’appareil.`,
-     `L’Epson PowerLite 810E est encore plus court, mais sa fiche ne dit rien d’une installation vers le haut. À écarter tant qu’Epson ne le confirme pas.`]],
-   ['Le socle en goutte',[`L’image d’un ultra-court commence à une vingtaine de centimètres du projecteur. Le boîtier dépasse donc du disque d’environ ${fr(o.saillie*100)} cm. Le socle prend la forme d’une goutte, entre PHASMA et ESSAIM, et cette pointe sert aussi à l’aération, au commutateur et à l’arrivée des câbles.`]],
-   ['Pourquoi pas un fisheye au centre',[`À ${fr(S.diam,2)} pi, il faut ${fr(2*f.theta)}° de champ ; le bord reçoit ${fr(f.bord*100)} % de la lumière du centre. À 7 pi : ${fr(2*g.theta)}° et ${fr(g.bord*100)} %. L’objectif dôme Optoma BX-CTADOME existe (180°), mais il se vend environ 10 700 $ US sans le projecteur, et une bonne part de ses pixels tombe hors du disque.`]],
-   ['Toile ou plaque',[`À ${fr(o.inc)}° d’incidence au bord opposé, un creux de 5 mm dans la toile déplace l’image d’environ ${fr(5*Math.tan(o.inc*Math.PI/180))} mm. Une toile horizontale pend toujours un peu : il vaut mieux une plaque rigide en acrylique de rétroprojection, ou une toile posée sur une plaque claire. Elle supporte aussi un verre ou un coude.`,
-     `Le diffuseur doit être très large (gain sous 1, demi-gain près de 70°), sinon l’image est claire d’un côté et sombre de l’autre. Un essai avec un échantillon et un ultra-court emprunté règle la question avant d’acheter.`]],
+   ['Le projecteur',[`Kit Epson Pro L1505U avec l’objectif ELPLU03S, de la liste de prêt. Avec cet objectif, son rapport est de 0,48 à 0,57 : il est à plat dans le socle et tire vers un miroir à 45°. Image de 5 pi (1,52 m), socle rond de ${fr(e.Rb*2,2)} m, toile à 95 cm. Aucun projecteur debout ni au plafond.`,
+     `Plan B de la même liste : le BenQ HT2150ST (cinq exemplaires), suspendu à l’envers dans le socle. Image de 3,75 pi (1,14 m) et socle de ${fr(h.Rb*2,2)} m.`]],
+   ['À vérifier sur l’Epson',[`Longueur de l’objectif qui dépasse du boîtier (10 cm dans le modèle), hauteur de l’axe, et décentrement vertical réel (± 24 % selon Epson pour cette taille d’appareil). Le modèle utilise ${fr(Math.abs(e.f.sh/e.f.Di)*100)} %.`,
+     `Chaleur et bruit : jusqu’à 955 W et 39 dB, 33 dB en Eco. Le socle doit être ventilé, et le laser peut être baissé : à pleine puissance la toile reçoit environ ${fr(Math.round(e.lux/50)*50)} lx.`]],
+   ['Le miroir',[`Environ ${cm(e.f.ml)} × ${cm(e.f.mw)} cm, à première surface (sinon l’image se dédouble). Verre ou film tendu sur cadre. Le socle doit garder l’angle de 45° au demi-degré près : prévoir trois vis de réglage.`]],
+   ['La toile',[`L’incidence ne dépasse pas ${fr(e.inc)}° : une toile tendue devient possible. Un creux de 5 mm déplace l’image d’environ ${fr(5*Math.tan(e.inc*Math.PI/180))} mm. Une plaque rigide reste préférable si le public peut s’y appuyer.`,
+     `Dans une galerie blanche, les noirs de l’image montent avec la lumière de la salle : choisir une toile grise de rétroprojection, et garder la lumière basse autour du disque.`]],
    ['Des 10 po dans un instrument de 179 mm',[`Un coaxial de 10 po fait ${DRIVER.d} mm de diamètre et ${DRIVER.depth} mm de profondeur de montage. Dos à dos, il faut au moins 290 mm de large et 290 mm de profond : le stand est forcément plus profond que le case (179 mm). Le Monolithe règle l’écart par un épaulement, le Losange par ses facettes.`]],
    ['Large bande ou grave',[`Un haut-parleur de 10 po seul ne monte pas dans l’aigu. La maquette suppose des coaxiaux (10 po et moteur d’aigu au centre). Une autre voie, à la Barefoot : 10 po latéraux pour le grave et un petit large bande vers le joueur.`]],
    ['Vibrations et IMU',[`Les deux haut-parleurs sont sous la base molle : leurs vibrations peuvent entrer dans l’IMU. Le montage dos à dos annule les forces seulement si les deux membranes jouent la même chose. D’où des graves sommés en mono, et un filtre passe-bas sur l’IMU.`]],
