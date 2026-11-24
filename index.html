@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IMPRESSION[S]</title>
+<meta name="description" content="Maquette 3D d’IMPRESSION[S], installation audiovisuelle de Vincent Fillion : trois instruments autour d’un cercle de rétroprojection.">
+<meta property="og:title" content="IMPRESSION[S]">
+<meta property="og:description" content="Maquette 3D : trois instruments autour d’un cercle de rétroprojection.">
+<meta property="og:image" content="https://filliformes.github.io/impressions/img/espace.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='7' fill='%23333a7c'/><circle cx='16' cy='3.5' r='3' fill='%23c4232c'/><circle cx='5.2' cy='22.2' r='3' fill='%23c4232c'/><circle cx='26.8' cy='22.2' r='3' fill='%23c4232c'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&display=swap">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head>
+<body data-tab="espace">
+<header>
+  <h1>IMPRESSION<span>[S]</span></h1>
+  <nav role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="espace" aria-selected="true">Espace</button>
+    <button role="tab" data-tab="instrument" aria-selected="false">Instrument</button>
+    <button role="tab" data-tab="cotes" aria-selected="false">Plan et cotes</button>
+    <button role="tab" data-tab="signal" aria-selected="false">Signal</button>
+    <button role="tab" data-tab="choix" aria-selected="false">À trancher</button>
+  </nav>
+</header>
+
+<main>
+  <div id="stage">
+    <canvas id="cv" aria-label="Maquette 3D : glisser pour tourner, molette pour zoomer"></canvas>
+    <div id="labels"></div>
+    <p id="hint"></p>
+    <p id="load">Chargement de la maquette…</p>
+  </div>
+  <aside id="panel" aria-label="Réglages">
+    <button id="fold" aria-expanded="true" aria-controls="panelIn"><span>Réglages</span></button>
+    <div id="panelIn"></div>
+  </aside>
+
+  <section class="page" id="p-cotes" hidden>
+    <div class="col">
+      <h2>Plan de l’espace</h2>
+      <p class="lede">Le plan et les élévations suivent les réglages choisis dans les vues 3D.</p>
+      <div class="fig" id="plan"></div>
+      <h2>Les trois stands</h2>
+      <p class="lede">Face et profil, à la même échelle. Cotes en millimètres.</p>
+      <div class="fig" id="elev"></div>
+      <div class="scroll"><table id="tbl"></table></div>
+      <p class="note">Masses estimées : tôle d’acier de 1,5 mm (A et B) ou 5 mm (C), caisson, deux haut-parleurs de 3,95 kg, ampli, instrument et base molle. Force de basculement : poussée horizontale à la hauteur des pads qui fait lever le pied, sans lest.</p>
+      <h2>Le case et la base molle</h2>
+      <div class="scroll"><table>
+        <tr><th>Élément</th><th>Cote (mm)</th><th>Source</th></tr>
+        <tr><td>Case, largeur × profondeur</td><td>266,4 × 178,9</td><td>3MF de François</td></tr>
+        <tr><td>Case, hauteur au deck / au capot</td><td>58,8 / 83,2</td><td>3MF</td></tr>
+        <tr><td>Capot FLOU, largeur</td><td>201,5</td><td>3MF</td></tr>
+        <tr><td>Pads XY</td><td>69 × 69, espacés de 126,3 (centre à centre)</td><td>3MF</td></tr>
+        <tr><td>Slider, écran</td><td>75 × 9,5 ; 35,1 × 17,5</td><td>3MF</td></tr>
+        <tr><td>Jupe sous le case</td><td>cadre de 20, hauteur 15,5</td><td>3MF</td></tr>
+        <tr><td>Base molle</td><td>266,4 × 178,9 × 80</td><td>estimée sur les rendus</td></tr>
+        <tr><td>Gorge de la base</td><td>23,2 de large, 17 de profond</td><td>proposée (jeu de 1,6)</td></tr>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="page" id="p-signal" hidden>
+    <div class="col">
+      <h2>Chaîne du signal</h2>
+      <p class="lede">Chaque instrument est autonome pour le son. Seules les données vont à la régie, seule l’image en revient.</p>
+      <div class="fig" id="sig"></div>
+      <div class="scroll"><table>
+        <tr><th>Liaison</th><th>Câble</th><th>Remarque</th></tr>
+        <tr><td>Micro → Pandore IN 1</td><td>XLR</td><td>Micro dynamique : alimentation fantôme coupée</td></tr>
+        <tr><td>Pandore OUT L/R → ampli</td><td>2 × 6,35 mm TRS</td><td>Gauche et droite : un haut-parleur chacun</td></tr>
+        <tr><td>Ampli → haut-parleurs</td><td>2 × 2,5 mm²</td><td>Graves sommés en mono, en phase : les deux membranes s’opposent et les forces s’annulent</td></tr>
+        <tr><td>Pandore ETH 1 → commutateur</td><td>Cat 6</td><td>Réseau fermé : bus de coordination OSC, dataFLOU, audio réseau</td></tr>
+        <tr><td>Courant → instrument</td><td>1 par stand</td><td>Une seule entrée sur le stand : ampli et bloc 12 V du Pandore</td></tr>
+        <tr><td>Commutateur → régie</td><td>Cat 6</td><td>Palinopsia reçoit les données des trois instruments</td></tr>
+        <tr><td>Régie → projecteur</td><td>SDI ou HDBaseT</td><td>Même principe que Kamouropsie au-delà de 10 m</td></tr>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="page" id="p-choix" hidden>
+    <div class="col">
+      <h2>À trancher</h2>
+      <div id="choix"></div>
+    </div>
+  </section>
+</main>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
