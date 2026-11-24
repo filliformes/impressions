@@ -43,3 +43,11 @@ export const INSTR = {
   ESSAIM: { nom:'ESSAIM', role:'l’ambiance' }
 };
 export const FT = 0.3048;
+
+// Projecteurs ultra-courte focale utilisables tirés vers le haut. Cotes en mètres.
+// L1 : arrière du projecteur à la toile, H : bord de l'image à la face supérieure du boîtier (fonctions de la diagonale en pouces)
+export const PROJ = {
+  cmz50:{ nom:'Panasonic PT-CMZ50', aspect:1.6, px:1200, lm:5200, tr:.235, min:80, max:120, w:.495, d:.421, t:.160, L1:p=>.01+(p-80)*.0045, H:p=>.13+(p-80)*.0025, sur:true, prix:'4 500 à 5 100 $ US' },
+  zu600:{ nom:'Optoma ZU600UST', aspect:1.6, px:1200, lm:6000, tr:.25, min:80, max:150, w:.328, d:.327, t:.109, L1:p=>.25*p*.0254*.848+.07-.327, H:p=>.16*p*.0254*.53, sur:false, prix:'3 500 $ US' },
+  uhl3660:{ nom:'Ricoh UHL3660', aspect:16/9, px:2160, lm:6500, tr:.241, min:85, max:160, w:.530, d:.470, t:.139, L1:p=>.02+(p-85)*.0048, H:p=>.13*p*.0254*.49, sur:false, prix:'6 000 $ US' }
+};

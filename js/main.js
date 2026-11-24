@@ -8,7 +8,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { initMaterials, M, mesh, disposeTree } from './util.js';
-import { SILICONE, INSTR, FT, DRIVER } from './data.js';
+import { SILICONE, INSTR, FT, DRIVER, PROJ } from './data.js';
 import { STANDS } from './stands.js';
 import { buildAssembly, person, PAD_OFF } from './assembly.js';
 import { ECRANS, buildSpace, optics } from './space.js';
@@ -20,12 +20,12 @@ const fr=(v,d=0)=>v.toLocaleString('fr-CA',{minimumFractionDigits:d,maximumFract
 export const S = {
   tab:'espace', stand:'A', mic:'bras', open:false, silicone:'bleu', padH:980, nom:'RES',
   mode:'un', eclate:0, xray:false, cotesI:false, figure:false,
-  ecran:'fisheye', diam:7, ecranH:800, ecart:500, salle:9, vue:'ensemble', public:true, cables:true, faisceau:false, coupe:false, cotesE:false, service:false
+  ecran:'bord', proj:'cmz50', diam:5, ecranH:800, ecart:500, salle:9, vue:'ensemble', public:true, cables:true, faisceau:false, coupe:false, cotesE:false, service:false
 };
 const DEF={...S};
-const KEYS={tab:'t',stand:'s',mic:'m',open:'g',silicone:'c',padH:'p',nom:'n',mode:'d',ecran:'e',diam:'o',ecranH:'h',ecart:'a',salle:'r',vue:'v',xray:'x'};
+const KEYS={tab:'t',stand:'s',mic:'m',open:'g',silicone:'c',padH:'p',nom:'n',mode:'d',ecran:'e',proj:'j',diam:'o',ecranH:'h',ecart:'a',salle:'r',vue:'v',xray:'x'};
 (function readHash(){ const q=new URLSearchParams(location.hash.slice(1)); for(const k in KEYS){ const v=q.get(KEYS[k]); if(v===null) continue; const t=typeof DEF[k]; S[k]=t==='number'?(+v||DEF[k]):t==='boolean'?v==='1':v; }
-  if(!STANDS[S.stand]) S.stand='A'; if(!ECRANS[S.ecran]) S.ecran='fisheye'; if(!SILICONE[S.silicone]) S.silicone='bleu'; if(!INSTR[S.nom]) S.nom='RES'; })();
+  if(!STANDS[S.stand]) S.stand='A'; if(!ECRANS[S.ecran]) S.ecran='bord'; if(!PROJ[S.proj]) S.proj='cmz50'; if(!SILICONE[S.silicone]) S.silicone='bleu'; if(!INSTR[S.nom]) S.nom='RES'; })();
 function writeHash(){ const q=new URLSearchParams(); for(const k in KEYS) if(S[k]!==DEF[k]) q.set(KEYS[k],typeof S[k]==='boolean'?(S[k]?1:0):S[k]); const h=q.toString(); history.replaceState(null,'',h?'#'+h:location.pathname+location.search); }
 
 // ---------------------------------------------------------------- rendu
@@ -64,7 +64,7 @@ function dim(g,a,b,txt,col='#c4232c',tick=V(.012,0,0)){
 }
 function buildStudio(){
   asm.forEach(a=>disposeTree(a.g)); asm=[]; clear(studioExtra);
-  const kinds=S.mode==='trois'?['A','B','C']:[S.stand], names=Object.keys(INSTR);
+  const kinds=S.mode==='trois'?['A','B']:[S.stand], names=Object.keys(INSTR);
   kinds.forEach((k,i)=>{ const a=buildAssembly({...S,stand:k,nom:S.mode==='trois'?names[i]:S.nom}); a.g.position.x=(i-(kinds.length-1)/2)*1.02; studio.add(a.g); a.set.e=S.eclate; a.apply(); asm.push(a);
     if(S.mode==='trois') label(k+'  '+STANDS[k].nom,V(a.g.position.x,.06,.5),'n',studioExtra); });
   if(S.figure) kinds.forEach((k,i)=>{ const p=person({h:1.72,pose:'joue',handY:S.padH/1000,mat:M.fig}); p.position.set((i-(kinds.length-1)/2)*1.02,0,.5); studioExtra.add(p); });
@@ -92,9 +92,9 @@ function applyRoom(){
     const p=space.inst.map(a=>V(Math.sin(a.angle)*i.Rr,.03,Math.cos(a.angle)*i.Rr)); p.forEach((q,k)=>dim(g,q,p[(k+1)%3],fr(i.dist,2)+' m',col,V(0,.04,0)));
     dim(g,V(i.R+.12,0,0),V(i.R+.12,i.H,0),fr(S.ecranH),col,V(.04,0,0));
   }
-  space.inst.forEach(a=>label(a.nom,V(Math.sin(a.angle)*i.Rr,S.padH/1000+.16,Math.cos(a.angle)*i.Rr),'n',g));
+  space.inst.filter((a,k)=>!(S.coupe&&k===1)).forEach(a=>label(a.nom,V(Math.sin(a.angle)*i.Rr,S.padH/1000+.16,Math.cos(a.angle)*i.Rr),'n',g));
   if(S.cables||S.coupe) label('Régie : Palinopsia',space.regie.position.clone().setY(1.42),'',g);
-  if(S.coupe||S.faisceau) label(S.ecran==='ust'?'2 projecteurs ultra-courts':S.ecran==='cylindre'?'Projecteur et miroir convexe':'Projecteur, objectif fisheye',V(0,.1,.2),'',g);
+  if(S.coupe||S.faisceau) label(S.ecran==='bord'?PROJ[S.proj].nom:'Projecteur, objectif fisheye',S.ecran==='bord'?V(0,i.H+.06,-(i.R+.2)):V(0,.1,.2),'',g);
 }
 
 // ---------------------------------------------------------------- caméras
@@ -105,7 +105,7 @@ function goto(p,t,fov=34,ms=1100){ const reduce=matchMedia('(prefers-reduced-mot
 function viewRoom(ms=1100){
   const i=space.info, k=portrait()?1.95:1, Rr=i.Rr, views={
     ensemble:[V(3.5*k,2.35*k+.2,4.35*k),V(0,.62,0),38], plan:[V(0,8.8*k,.01),V(0,0,0),38],
-    joueur:[V(0,1.62,Rr+.52),V(0,.36,-.15),64], regie:[V(-i.RW/2+.72,1.72,-i.RW/2+.72),V(.6,.6,.6),50], coupe:[V(.25,.95,-Math.min(i.RW/2-.2,4.3*k)),V(0,.58,0),42], instrument:[V(Math.sin(2.0944)*(Rr+1.05)+.75,1.55,Math.cos(2.0944)*(Rr+1.05)+.8),V(Math.sin(2.0944)*Rr-.12,.74,Math.cos(2.0944)*Rr),40] };
+    joueur:[V(0,1.62,Rr+.52),V(0,.36,-.15),64], regie:[V(-i.RW/2+.72,1.72,-i.RW/2+.72),V(.6,.6,.6),50], coupe:[V(Math.min(i.RW/2-.2,4.0*k),.98,-.15),V(0,.55,-.15),42], instrument:[V(Math.sin(2.0944)*(Rr+1.05)+.75,1.55,Math.cos(2.0944)*(Rr+1.05)+.8),V(Math.sin(2.0944)*Rr-.12,.74,Math.cos(2.0944)*Rr),40] };
   const v=views[S.vue]||views.ensemble; S.coupe=S.vue==='coupe'; applyRoom(); goto(...v,ms);
 }
 function viewStudio(ms=1100){ const k=portrait()?1.45:1; if(S.mode==='trois') goto(V(1.15*k*(portrait()?1.25:1),1.4,4.1*k*(portrait()?1.25:1)),V(0,.68,0),34,ms); else if(S.figure) goto(V(2.75*k,1.5,-.35),V(.02,.83,.22),34,ms); else goto(V(1.12*k,1.6,2.12*k),V(.03,.72,0),34,ms); }
@@ -127,7 +127,7 @@ function panel(){
   const top=P.scrollTop; P.innerHTML='';
   const sil=el('<div class="sw"></div>'); for(const k in SILICONE){ const b=el(`<button type="button" aria-label="Silicone ${k}" title="${k}" aria-pressed="${S.silicone===k}" style="background:${SILICONE[k]}"></button>`); b.onclick=()=>{ S.silicone=k; S.tab==='espace'?reE():reI(); panel(); }; sil.append(b); }
   if(S.tab==='instrument'){
-    grp('Affichage',seg('mode',{un:'Une proposition',trois:'Comparer les trois'},()=>{ reI(); viewStudio(); }));
+    grp('Affichage',seg('mode',{un:'Une proposition',trois:'Comparer les deux'},()=>{ reI(); viewStudio(); }));
     if(S.mode==='un') grp('Stand',seg('stand',Object.fromEntries(Object.entries(STANDS).map(([k,v])=>[k,v.nom])),reI),`<p class="desc">${STANDS[S.stand].court}</p>`);
     grp('Micro',seg('mic',{bras:'Bras articulé',pied:'Pied de micro'},reI));
     grp('Haut-parleurs',seg('open',{false:'Grilles perforées',true:'Membranes visibles'},reI));
@@ -138,8 +138,8 @@ function panel(){
     const d=grp(S.mode==='un'?'Chiffres':'Exporter','<dl class="kv" id="ro"></dl>'); const b=el('<button class="btn" type="button">Télécharger le modèle (GLB)</button>'); b.onclick=exportGLB; d.append(b);
   } else {
     grp('Vue',seg('vue',{ensemble:'Ensemble',joueur:'Joueur',instrument:'Instrument',coupe:'Coupe',plan:'Dessus',regie:'Régie'},()=>{ viewRoom(); writeHash(); }));
-    grp('Écran',seg('ecran',Object.fromEntries(Object.entries(ECRANS).map(([k,v])=>[k,v.nom])),reE),`<p class="desc">${ECRANS[S.ecran].court}</p>`,
-      rng('diam','Diamètre',6,8,.5,v=>`${fr(v,1)} pi (${fr(v*FT,2)} m)`,reE),rng('ecranH',S.ecran==='cylindre'?'Hauteur de la toile':'Hauteur de la toile',S.ecran==='cylindre'?1200:500,S.ecran==='cylindre'?1800:1100,10,mm,reE),rng('ecart','Écart écran, instrument',250,1200,50,mm,reE),rng('salle','Côté de la salle',7,12,.5,v=>fr(v,1)+' m',reE));
+    grp('Écran',seg('ecran',Object.fromEntries(Object.entries(ECRANS).map(([k,v])=>[k,v.nom])),reE),`<p class="desc">${ECRANS[S.ecran].court}</p>`,S.ecran==='bord'?Object.assign(seg('proj',Object.fromEntries(Object.entries(PROJ).map(([k,v])=>[k,v.nom])),reE),{style:'margin-top:8px'}):null,
+      rng('diam','Diamètre',4,7,.25,v=>`${fr(v,2)} pi (${fr(v*FT,2)} m)`,reE),rng('ecranH','Hauteur de la toile',550,1100,10,mm,reE),rng('ecart','Écart écran, instrument',250,1200,50,mm,reE),rng('salle','Côté de la salle',7,12,.5,v=>fr(v,1)+' m',reE));
     grp('Instruments',seg('stand',Object.fromEntries(Object.entries(STANDS).map(([k,v])=>[k,v.nom])),reE),Object.assign(seg('mic',{bras:'Bras articulé',pied:'Pied de micro'},reE),{style:'margin-top:8px'}),Object.assign(seg('open',{false:'Grilles',true:'Membranes'},reE),{style:'margin-top:8px'}),'<div style="height:10px"></div>',sil);
     grp('Montrer',tog([['public','Le public',applyRoom],['cables','Les câbles',applyRoom],['faisceau','Le faisceau',applyRoom],['cotesE','Les cotes',applyRoom],['service','Lumière de service',applyRoom]]));
     grp('Optique',`<dl class="kv" id="ro"></dl>`);
@@ -151,9 +151,8 @@ function readout(){
   if(S.tab==='instrument'){ if(S.mode!=='un'){ d.innerHTML=''; return; } const i=asm[0]?.info; if(!i) return;
     d.innerHTML=row('Hauteur du stand',mm(i.Hs*1000))+row('Emprise au sol',`${i.encombrement[0]} × ${i.encombrement[1]} mm`)+row('Corps, largeur × prof.',`${i.corps[0]} × ${i.corps[1]} mm`)+row('Volume par haut-parleur',`≈ ${fr(i.vol/2,0)} L`)+row('Masse totale',`≈ ${fr(i.kg)} kg`)+row('Force qui fait basculer',`≈ ${fr(i.bascule,-0)} N`,i.bascule<110);
   } else { const o=optics(S);
-    if(S.ecran==='fisheye') d.innerHTML=row('Lentille, toile',`${fr(o.d*100)} cm`)+row('Angle de champ requis',`${fr(2*o.theta)}°`,o.theta>75)+row('Rapport équivalent',`${fr(o.tr,2)} : 1`)+row('Lumière au bord / au centre',`${fr(o.bord*100)} %`,o.bord<.2)+row('Pixel au centre / au bord',`${fr(o.pxC,1)} / ${fr(o.pxB,1)} mm`,o.pxB>5);
-    else if(S.ecran==='ust') d.innerHTML=row('Image par projecteur',`${fr(o.ustW,2)} × ${fr(o.ustW*10/16,2)} m`)+row('Distance requise (0,24 : 1)',`${fr(o.ustD*100)} cm`)+row('Hauteur disponible',`${fr((o.H-.1)*100)} cm`,o.H-.1<o.ustD)+row('Pixel',`${fr(o.ustPx,1)} mm`);
-    else d.innerHTML=row('Toile',`${fr(2*Math.PI*o.R,2)} × ${fr(Math.max(o.H,1.2),2)} m`)+row('Pixel sur le tour (1200 px)',`≈ ${fr(2*Math.PI*o.R/(Math.PI*800)*1000,1)} mm`)+row('Surface',`${fr(2*Math.PI*o.R*Math.max(o.H,1.2),1)} m²`);
+    if(S.ecran==='fisheye') d.innerHTML=row('Lentille, toile',`${fr(o.d*100)} cm`)+row('Angle de champ requis',`${fr(2*o.theta)}°`,o.theta>60)+row('Lumière au bord / au centre',`${fr(o.bord*100)} %`,o.bord<.2)+row('Pixel au centre / au bord',`${fr(o.pxC,1)} / ${fr(o.pxB,1)} mm`,o.pxB>4);
+    else d.innerHTML=row('Image du projecteur',`${fr(o.diag)} po (${fr(o.P.min)} à ${fr(o.P.max)})`,!o.ok)+row('Disque maximal',`${fr(o.dmax,1)} pi`,S.diam>o.dmax)+row('Hauteur requise sous la toile',`${fr((o.haut+.05)*100)} cm`,!o.rentre)+row('Saillie hors du disque',`${fr(o.saillie*100)} cm${o.P.sur?'':' *'}`)+row('Pixel',`${fr(o.px,1)} mm`)+row('Éclairement de la toile',`≈ ${fr(Math.round(o.lux/50)*50)} lx`)+row('Incidence au bord opposé',`${fr(o.inc)}°`)+row('Prix repéré',o.P.prix)+(o.P.sur?'':'<dt style="grid-column:1/-1">* décalage estimé, absent des fiches lues</dt>');
     d.innerHTML+=row('Distance entre instruments',`${fr(space?.info.dist||0,2)} m`);
   }
 }
@@ -191,7 +190,7 @@ function step(now){
   } else if(space){
     const u=space.screenMat.uniforms; u.uT.value=t; const hw=space.info.RW/2-.05; space.walls.children.forEach((w,i)=>{ w.visible=[cam.position.z>-hw,cam.position.z<hw,cam.position.x>-hw,cam.position.x<hw][i]; });
     space.inst.forEach((a,i)=>{ // les joueurs bougent doucement leur instrument
-      const q=S.public?1:0; a.set.rx=q*.035*Math.sin(t*(.7+i*.13)+i*2); a.set.rz=q*.045*Math.sin(t*(.5+i*.17)+i*4); a.apply(); a.oled.draw(a.nom,t,[-a.set.rz,a.set.rx]); u.uE.value.setComponent(i,.35+.4*Math.abs(Math.sin(t*(.5+i*.17)+i*4))); space.glow[i].intensity=(S.ecran==='cylindre'?1.5:2.3)*(.85+.25*Math.sin(t*(.6+i*.3)+i)); });
+      const q=S.public?1:0; a.set.rx=q*.035*Math.sin(t*(.7+i*.13)+i*2); a.set.rz=q*.045*Math.sin(t*(.5+i*.17)+i*4); a.apply(); a.oled.draw(a.nom,t,[-a.set.rz,a.set.rx]); u.uE.value.setComponent(i,.35+.4*Math.abs(Math.sin(t*(.5+i*.17)+i*4))); space.glow[i].intensity=(2.3)*(.85+.25*Math.sin(t*(.6+i*.3)+i)); });
     if(S.service){ bloom.strength=.05; } else bloom.strength=.2;
     comp.render(dt); L2.render(room,cam);
   }

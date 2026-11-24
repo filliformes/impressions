@@ -38,7 +38,7 @@ export function buildAssembly(o){
 
 function buildCables(g,Hs,y0,stand){
   const at=n=>{ const o=BACK.find(b=>b[0]===n); return { x:(PCB.x+o[1]-C.cx)/1000, y:y0+(PCB.zTop+o[5])/1000, z:-(C.y1+o[6]-C.cy)/1000 }; };
-  const inY = stand==='C'?Hs-.06:Hs-.17, inZ = stand==='A'?-.15:stand==='B'?-.145:-.07;
+  const inY=Hs-.17, inZ=stand==='A'?-.15:-.145;
   const run=(p,len,rp,rc,mat,ix)=>{
     const b=mesh(new THREE.CylinderGeometry(rp,rp*.85,len,24).rotateX(-Math.PI/2),mat); b.position.set(p.x,p.y,p.z-len/2); g.add(b);
     const e=V(p.x,p.y,p.z-len);
@@ -48,7 +48,7 @@ function buildCables(g,Hs,y0,stand){
   const out=at('OUT'); run({...out,y:out.y+.0084},.05,.0072,.003,M.dark,-.03); run({...out,y:out.y-.0084},.05,.0072,.003,M.dark,-.015); // TRS vers l'ampli
   run(at('ETH1'),.036,.0072,.003,M.pcb,.02);                         // réseau
   run(at('DC'),.03,.005,.0025,M.cable,.035);                         // alimentation
-  if(stand!=='C'){ const c=mesh(new THREE.CylinderGeometry(.055,.055,.006,32).rotateX(Math.PI/2).scale(1.1,.36,1),M.black); c.position.set(0,inY,inZ); if(stand==='B') c.rotation.x=.35; g.add(c); }
+  { const c=mesh(new THREE.CylinderGeometry(.055,.055,.006,32).rotateX(Math.PI/2).scale(1.1,.36,1),M.black); c.position.set(0,inY,inZ); if(stand==='B') c.rotation.x=.35; g.add(c); }
 }
 
 // --- silhouettes d'échelle

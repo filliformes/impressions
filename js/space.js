@@ -1,14 +1,13 @@
 // L'espace : écran de rétroprojection, trois instruments, régie, public.
 import * as THREE from 'three';
 import { M, mesh, cbox, ccyl, rod, tube, dots, disposeTree } from './util.js';
-import { FT, INSTR } from './data.js';
+import { FT, INSTR, PROJ } from './data.js';
 import { buildAssembly, person } from './assembly.js';
 
 const V=(x,y,z)=>new THREE.Vector3(x,y,z), TAU=Math.PI*2;
 export const ECRANS = {
-  fisheye:{ nom:'Disque, un fisheye', court:'Toile horizontale. Un projecteur au centre, objectif fisheye vers le haut.' },
-  ust:{ nom:'Disque, deux ultra-courts', court:'Toile horizontale. Deux projecteurs ultra-courte focale au centre, un par demi-cercle, raccord par fondu.' },
-  cylindre:{ nom:'Cylindre 360°', court:'Toile tendue sur le tour. Projecteur au centre vers un miroir convexe.' }
+  bord:{ nom:'Ultra-court au bord', court:'Un seul projecteur, debout sous le bord du disque. Le socle devient une goutte qui le cache.' },
+  fisheye:{ nom:'Fisheye au centre', court:'Un projecteur au milieu, objectif fisheye vers le haut. Socle rond.' }
 };
 export const LENS_H=.32, WALL=.05;
 
@@ -49,16 +48,23 @@ export function screenMaterial(R,cyl){
     fragmentShader:'uniform float uAlpha;\n'+FRAG });
 }
 
-// calculs d'optique pour l'affichage
+// calculs d'optique pour l'affichage et le modèle
 export function optics(s){
-  const R=s.diam*FT/2, H=s.ecranH/1000, d=H-LENS_H, th=Math.atan2(R,d);
-  const o={ R,H,d,theta:th*180/Math.PI };
+  const R=s.diam*FT/2, H=s.ecranH/1000, d=H-LENS_H, th=Math.atan2(R,d), o={ R,H,d,theta:th*180/Math.PI };
   o.bord=(th/Math.sin(th))*Math.pow(Math.cos(th),3);           // éclairement au bord / au centre, fisheye équidistant
-  o.tr=d/(2*R*16/10);                                          // rapport de projection équivalent (objectif droit)
-  o.pxC=d/(600/th)*1000; o.pxB=o.pxC/Math.pow(Math.cos(th),2); // 1200 px de haut, cercle plein cadre
-  const w=2*R*1.04; o.ustW=w; o.ustD=w*.24; o.ustPx=w/1920*1000;  // UST 1920 x 1200, rapport 0,24
-  o.surface=Math.PI*R*R;
+  o.pxC=d/(600/(Math.PI/2))*1000; o.pxB=o.pxC/Math.pow(Math.cos(th),2); // fisheye 180°, 1200 px de haut
+  const P=PROJ[s.proj]; o.P=P; o.imgH=2*R*1.025; o.imgW=o.imgH*P.aspect; o.diag=Math.hypot(o.imgH,o.imgW)/.0254;
+  o.L=P.tr*o.imgW; o.L1=Math.max(P.L1(o.diag),0); o.Hd=P.H(o.diag); o.haut=o.L1+P.d; o.saillie=o.Hd+P.t+(o.imgH/2-R);
+  o.px=o.imgH/P.px*1000; o.lux=P.lm*(Math.PI/4/P.aspect)/1.025/1.025/(Math.PI*R*R); o.inc=Math.atan2(o.Hd+o.imgH,o.L)*180/Math.PI;
+  o.ok=o.diag>=P.min&&o.diag<=P.max; o.dmax=P.max*.0254/Math.hypot(1,P.aspect)/1.025/FT; o.rentre=o.haut+.05<=H;
   return o;
+}
+// contour du socle : enveloppe convexe du disque et du boîtier du projecteur (côté -z)
+export function outline(o,bord){
+  const pts=[], N=180; for(let i=0;i<N;i++){ const a=i/N*TAU; pts.push([Math.sin(a)*o.R,Math.cos(a)*o.R]); }
+  if(bord){ const hw=o.P.w/2+.045, zb=o.R+o.saillie+.05, r=.05; [1,-1].forEach(k=>{ for(let i=0;i<=6;i++){ const a=i/6*Math.PI/2; pts.push([k*(hw-r+r*Math.cos(a)),-(zb-r+r*Math.sin(a))]); } }); }
+  pts.sort((p,q)=>p[0]-q[0]||p[1]-q[1]); const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]), half=L=>{ const h=[]; for(const p of L){ while(h.length>1&&cr(h[h.length-2],h[h.length-1],p)<=1e-9) h.pop(); h.push(p); } h.pop(); return h; };
+  return [...half(pts),...half([...pts].reverse())];
 }
 
 export function buildSpace(s,lists){
@@ -73,51 +79,49 @@ export function buildSpace(s,lists){
   });
   // --- écran
   const scr=new THREE.Group(); g.add(scr);
-  const cyl=s.ecran==='cylindre', ch=cyl?Math.max(H,1.2):0;
-  const mat=screenMaterial(R,cyl); out.screenMat=mat;
-  const halfSkirt=[];
-  if(!cyl){
-    const disc=new THREE.Mesh(new THREE.CircleGeometry(R-.012,128).rotateX(-Math.PI/2),mat); disc.position.y=H+.002; scr.add(disc); out.disc=disc;
-    // jante et pied en tôle blanche
-    const rim=[[R-.03,H-.05],[R,H-.05],[R,H+.004],[R-.012,H+.004]].map(p=>new THREE.Vector2(...p)); scr.add(mesh(new THREE.LatheGeometry(rim,160),M.white));
-    const foot=[[R-.05,0],[R,0],[R,.045],[R-.05,.045],[R-.05,0]].map(p=>new THREE.Vector2(...p)); scr.add(mesh(new THREE.LatheGeometry(foot,160),M.white));
-    // jupe noire en deux moitiés (la moitié avant s'ouvre en vue de coupe)
-    [0,1].forEach(k=>{ const sk=mesh(new THREE.CylinderGeometry(R-.02,R-.02,H-.095,96,1,true,k?Math.PI/2:-Math.PI/2,Math.PI),M.skirt,false); sk.position.y=(H-.005)/2; scr.add(sk); halfSkirt.push(sk); });
-    for(let i=0;i<12;i++){ const a=i/12*TAU+TAU/24; rod(scr,[Math.sin(a)*(R-.035),.04,Math.cos(a)*(R-.035)],[Math.sin(a)*(R-.035),H-.04,Math.cos(a)*(R-.035)],.0125,M.white); }
-    // prises d'air : même trame que le case
-    const L=[]; for(let j=0;j<6;j++) for(let i=0;i<360;i++){ const a=i/360*TAU, w=.5+.5*Math.cos(a*6+j*.5), r=.0016+.0042*w*(1-j/7); L.push([V(Math.sin(a)*(R+.0006-.02),.075+j*.018,Math.cos(a)*(R+.0006-.02)),V(Math.sin(a),0,Math.cos(a)),r]); }
-    const dm=new THREE.MeshBasicMaterial({color:'#3a4468'}); const air=dots(L,dm); scr.add(air); out.air=air;
-  } else {
-    const c=new THREE.Mesh(new THREE.CylinderGeometry(R,R,ch,160,1,true),mat); c.position.y=.18+ch/2; scr.add(c); out.disc=c;
-    [.16,.18+ch].forEach((y,i)=>{ const p=[[R-.03,y-.02],[R+.004,y-.02],[R+.004,y+.02],[R-.03,y+.02],[R-.03,y-.02]].map(q=>new THREE.Vector2(...q)); scr.add(mesh(new THREE.LatheGeometry(p,160),M.white)); });
-    const sk=mesh(new THREE.CylinderGeometry(R-.02,R-.02,.15,96,1,true),M.skirt,false); sk.position.y=.075; scr.add(sk);
-    for(let i=0;i<8;i++){ const a=i/8*TAU+TAU/16; rod(scr,[Math.sin(a)*(R-.03),0,Math.cos(a)*(R-.03)],[Math.sin(a)*(R-.03),.18+ch,Math.cos(a)*(R-.03)],.011,M.white); }
-  }
-  // --- projecteur(s)
+  const bord=s.ecran==='bord', O=optics(s), P=O.P, ol=outline(O,bord), mat=screenMaterial(R,false); out.screenMat=mat; out.O=O;
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(R-.014,128).rotateX(-Math.PI/2),mat); disc.position.y=H+.001; scr.add(disc); out.disc=disc;
+  const path=(Q,k=1)=>{ const q=new Q(); ol.forEach((p,i)=>{ i?q.lineTo(p[0]*k,-p[1]*k):q.moveTo(p[0]*k,-p[1]*k); }); q.closePath(); return q; };
+  const inset=d=>{ const q=new THREE.Path(), n=ol.length; ol.forEach((p,i)=>{ const a=ol[(i+n-1)%n], c=ol[(i+1)%n], tx=c[0]-a[0], tz=c[1]-a[1], l=Math.hypot(tx,tz), x=p[0]-tz/l*d, z=p[1]+tx/l*d; i?q.lineTo(x,-z):q.moveTo(x,-z); }); return q; };
+  const slab=(shape,y,h,m)=>{ const e=mesh(new THREE.ExtrudeGeometry(shape,{depth:h,bevelEnabled:false,curveSegments:96}).rotateX(-Math.PI/2),m); e.position.y=y; scr.add(e); return e; };
+  // dessus : tôle blanche d'un seul tenant autour de la toile
+  const top=path(THREE.Shape); { const c=new THREE.Path(); c.absarc(0,0,R-.014,0,TAU,true); top.holes.push(c); } slab(top,H-.006,.01,M.white);
+  const band=(y,h,d)=>{ const q=path(THREE.Shape); q.holes.push(inset(d)); slab(q,y,h,M.white); };
+  band(H-.05,.045,.012); band(0,.045,.04);
+  // jupe : deux moitiés, celle de droite (+x) s'ouvre en vue de coupe
+  const skirts=[[],[]]; { const n=ol.length; for(let k=0;k<2;k++){ const pos=[]; for(let i=0;i<n;i++){ const a=ol[i], c=ol[(i+1)%n], mx=(a[0]+c[0])/2; if((mx>0)!==(k===1)) continue; const f=.985, A=[a[0]*f,a[1]*f], C=[c[0]*f,c[1]*f]; pos.push(A[0],.04,A[1],C[0],.04,C[1],C[0],H-.04,C[1],A[0],.04,A[1],C[0],H-.04,C[1],A[0],H-.04,A[1]); }
+    const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); bg.computeVertexNormals(); const m=mesh(bg,M.skirt,false); scr.add(m); skirts[k].push(m); } }
+  for(let i=-4;i<=4;i++){ const a=i*TAU/12; rod(scr,[Math.sin(a)*(R-.04),.04,Math.cos(a)*(R-.04)],[Math.sin(a)*(R-.04),H-.05,Math.cos(a)*(R-.04)],.0125,M.white); }
+  if(!bord) [5,6,7].forEach(i=>{ const a=i*TAU/12; rod(scr,[Math.sin(a)*(R-.04),.04,Math.cos(a)*(R-.04)],[Math.sin(a)*(R-.04),H-.05,Math.cos(a)*(R-.04)],.0125,M.white); });
+  else [1,-1].forEach(k=>rod(scr,[k*(P.w/2+.02),.04,-(R+O.saillie+.02)],[k*(P.w/2+.02),H-.05,-(R+O.saillie+.02)],.0125,M.white));
+  // prises d'air : même trame que le case, le long du contour
+  const L=[]; { const n=ol.length; for(let i=0;i<n;i++){ const a=ol[i], c=ol[(i+1)%n], dx=c[0]-a[0], dz=c[1]-a[1], l=Math.hypot(dx,dz), m=Math.max(1,Math.round(l/.018)), nx=-(-dz/l), nz=-dx/l; const sg=(a[0]*nx+a[1]*nz)>0?1:-1;
+    for(let q=0;q<m;q++){ const t=(q+.5)/m, x=a[0]+dx*t, z=a[1]+dz*t, an=Math.atan2(x,z); for(let j=0;j<6;j++){ const w=.5+.5*Math.cos(an*6+j*.5), r=.0016+.0042*w*(1-j/7); L.push([V(x*.986+sg*nx*.002,.075+j*.018,z*.986+sg*nz*.002),V(sg*nx,0,sg*nz),r]); } } } }
+  const air=dots(L,new THREE.MeshBasicMaterial({color:'#3a4468'})); scr.add(air); out.air=air;
+  // --- projecteur
   const pj=new THREE.Group(); scr.add(pj); out.proj=pj;
   const beamMat=new THREE.MeshBasicMaterial({color:'#9fb8ff',transparent:true,opacity:.09,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
   const edge=new THREE.LineBasicMaterial({color:'#b9c9ff',transparent:true,opacity:.75});
   const beams=new THREE.Group(); scr.add(beams); out.beams=beams;
-  const line=pts=>beams.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),edge));
-  const floorBox=(x,z,w,d,h)=>cbox(pj,[x-w/2,.02,z-d/2],[x+w/2,h,z+d/2],M.white,.015);
-  if(s.ecran==='ust'){
-    const o=optics(s), yl=Math.max(H-o.ustD,.12);
-    [1,-1].forEach(k=>{ const x=k*.24, zc=-k*.16; floorBox(x,zc,.42,.2,Math.max(yl-.02,.2)); cbox(pj,[x-.1,yl-.03,zc-.05],[x+.1,yl,zc+.05],M.pad,.004);
-      const l=V(x,yl,zc), w=R-.02, q=[]; for(let n=0;n<=36;n++){ const a=-.04+(Math.PI+.08)*n/36; q.push(V(Math.cos(a)*w,H,k*Math.sin(a)*w)); }
-      const tri=[]; q.forEach((p,n)=>tri.push(l,p,q[(n+1)%q.length])); beams.add(new THREE.Mesh(new THREE.BufferGeometry().setFromPoints(tri),beamMat)); q.forEach((p,n)=>{ if(n%6===0) line([l,p]); }); line([...q,q[0]]); });
+  const line=(pts,m=edge)=>beams.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),m));
+  if(bord){
+    const zt=-(O.imgH/2+O.Hd), yt=H-O.L1, yb=yt-P.d;
+    cbox(pj,[-P.w/2,yb,zt-P.t],[P.w/2,yt,zt],M.white,.018); cbox(pj,[-P.w*.36,yt-P.d*.9,zt-.004],[P.w*.36,yt-P.d*.62,zt+.003],M.pad,.004);
+    for(let i=0;i<10;i++) cbox(pj,[P.w/2-.002,yb+.06+i*.018,zt-P.t+.03],[P.w/2+.002,yb+.068+i*.018,zt-.03],M.hole);
+    if(yb>.05){ cbox(pj,[-P.w/2,yb-.012,zt-P.t],[P.w/2,yb,zt],M.dark,.003); [1,-1].forEach(k=>rod(pj,[k*P.w*.42,.02,zt-P.t/2],[k*P.w*.42,yb-.01,zt-P.t/2],.012,M.dark)); }
+    const l=V(0,H-O.L,zt-.005), q=[]; for(let n=0;n<=72;n++){ const a=n/72*TAU; q.push(V(Math.sin(a)*(R-.014),H,Math.cos(a)*(R-.014))); }
+    const tri=[]; q.forEach((p,n)=>tri.push(l,p,q[(n+1)%q.length])); beams.add(new THREE.Mesh(new THREE.BufferGeometry().setFromPoints(tri),beamMat)); q.forEach((p,n)=>{ if(n%6===0) line([l,p]); });
+    const w=O.imgW/2,h=O.imgH/2,y=H+.012, dash=new THREE.LineBasicMaterial({color:'#ff8f7a',transparent:true,opacity:.8}); line([V(-w,y,-h),V(w,y,-h),V(w,y,h),V(-w,y,h),V(-w,y,-h)],dash);
   } else {
-    floorBox(0,0,.36,.36,.22); ccyl(pj,.075,.05,[0,.24,0],M.black,'y'); const dome=mesh(new THREE.SphereGeometry(.06,32,16,0,TAU,0,Math.PI/2),M.pad); dome.position.y=.262; pj.add(dome);
-    const ly=LENS_H-.02;
-    if(!cyl){ const co=new THREE.Mesh(new THREE.CylinderGeometry(R-.02,.04,H-ly,96,1,true),beamMat); co.position.y=(H+ly)/2; beams.add(co);
-      for(let i=0;i<12;i++){ const a=i/12*TAU; line([V(0,ly,0),V(Math.sin(a)*(R-.02),H,Math.cos(a)*(R-.02))]); } }
-    else { const my=Math.max(.18+ch+.1,1.35); const mir=mesh(new THREE.SphereGeometry(.2,48,24,0,TAU,Math.PI/2,Math.PI/2),M.magnet); mir.position.y=my; mir.scale.y=.8; pj.add(mir); ccyl(pj,.2,.02,[0,my+.01,0],M.white,'y');
-      [0,1,2].forEach(i=>{ const a=i/3*TAU; rod(pj,[Math.sin(a)*.19,my,Math.cos(a)*.19],[Math.sin(a)*(R-.03),.18+ch,Math.cos(a)*(R-.03)],.006,M.white); });
-      for(let i=0;i<12;i++){ const a=i/12*TAU,S=Math.sin(a),K=Math.cos(a); line([V(0,ly,0),V(S*.14,my-.12,K*.14),V(S*R,.2,K*R)]); line([V(0,ly,0),V(S*.06,my-.15,K*.06),V(S*R,.16+ch,K*R)]); } }
+    cbox(pj,[-.25,.02,-.22],[.25,.2,.22],M.white,.015); ccyl(pj,.075,.07,[0,.23,0],M.black,'y'); const dome=mesh(new THREE.SphereGeometry(.06,32,16,0,TAU,0,Math.PI/2),M.pad); dome.position.y=.262; pj.add(dome);
+    const ly=LENS_H-.02, co=new THREE.Mesh(new THREE.CylinderGeometry(R-.02,.04,H-ly,96,1,true),beamMat); co.position.y=(H+ly)/2; beams.add(co);
+    for(let i=0;i<12;i++){ const a=i/12*TAU; line([V(0,ly,0),V(Math.sin(a)*(R-.02),H,Math.cos(a)*(R-.02))]); }
   }
   // moyeu : commutateur + alimentation
-  if(!cyl||true){ const hx=R*.55, a=Math.PI/3; const hub=cbox(pj,[-.16,.02,-.1],[.16,.14,.1],M.dark,.006); hub.position.set(Math.sin(a+Math.PI)*hx,.08,Math.cos(a+Math.PI)*hx); hub.rotation.y=a; }
-  out.setCut=v=>{ if(halfSkirt[1]) halfSkirt[1].visible=!v; mat.uniforms.uAlpha.value=v?.55:1; if(out.air) out.air.visible=!v; };
+  { const a=Math.PI*.2, hub=cbox(pj,[-.16,.02,-.1],[.16,.14,.1],M.dark,.006); hub.position.x+=Math.sin(a)*R*.55; hub.position.z+=Math.cos(a)*R*.55; hub.rotation.y=a; }
+  out.setCut=v=>{ skirts[1].forEach(m=>m.visible=!v); mat.uniforms.uAlpha.value=v?.55:1; air.visible=!v; out.inst.forEach((a,i)=>a.g.visible=!(v&&i===1)); out.players.children.forEach((p,i)=>{ if(i===1) p.visible=!v; }); };
   out.setBeams=v=>{ beams.visible=v; };
+  const cyl=false;
 
   // --- instruments
   const Rr=R+s.ecart/1000+.16; out.Rr=Rr;

@@ -16,26 +16,25 @@ Chaque instrument tourne sur [Pandore](https://github.com/filliformes/pandore) e
 4. le **stand**, avec deux haut-parleurs de 10 po dos à dos (gauche et droite) et leur ampli
 5. un **micro** dynamique, sur pied ou sur bras articulé
 
-![Les trois stands](img/stands.jpg)
+![Les deux stands](img/stands.jpg)
 
 | | Idée | Emprise au sol |
 |---|---|---|
 | **A Monolithe** | Bloc de tôle pliée, épaulement à 45° repris du capot, perforations reprises du case | 460 × 460 mm |
 | **B Losange** | Volume à facettes, large aux haut-parleurs, resserré en haut et en bas | 470 × 450 mm |
-| **C Portique** | Deux tôles et un caisson suspendu, câblage visible | 420 × 400 mm |
 
 ![Vue éclatée](img/eclate.jpg)
 
 ## L'espace
 
-Le cercle fait de 6 à 8 pi. Trois versions sont modélisées : disque horizontal avec un projecteur fisheye au centre, disque avec deux projecteurs ultra-courts, et cylindre 360° avec miroir convexe. L'onglet Espace calcule l'optique requise.
+Un disque horizontal de 5 pi (1,52 m), rétroprojeté par en dessous. Un seul projecteur ultra-courte focale se tient debout au bord du disque ; le socle devient une goutte qui le cache. La version fisheye au centre reste dans la maquette pour comparaison. L'onglet Espace calcule l'image, le dégagement et la lumière selon le modèle choisi.
 
 ![Coupe](img/coupe.jpg)
 
 ## La maquette
 
 - **Espace** : vues d'ensemble, du joueur, de la régie, coupe et dessus. Diamètre, hauteur, écarts et salle sont réglables.
-- **Instrument** : les trois stands, les deux porte-micros, vue éclatée, intérieur, cotes, export GLB (Rhino 8, Blender). On peut glisser l'instrument pour l'incliner sur sa base molle.
+- **Instrument** : les deux stands, les deux porte-micros, vue éclatée, intérieur, cotes, export GLB (Rhino 8, Blender). On peut glisser l'instrument pour l'incliner sur sa base molle.
 - **Plan et cotes** : plan de l'espace et élévations, générés à partir des réglages.
 - **Signal** : chaîne audio, données et image.
 - **À trancher** : les questions de conception ouvertes.

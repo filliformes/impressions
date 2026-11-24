@@ -1,4 +1,4 @@
-// Trois propositions de stand, deux porte-micros.
+// Deux propositions de stand, deux porte-micros.
 import * as THREE from 'three';
 import { M, mesh, cbox, ccyl, loft, dots, rod, tube, polyShape, circ, silicone } from './util.js';
 import { DRIVER } from './data.js';
@@ -6,8 +6,7 @@ import { DRIVER } from './data.js';
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 export const STANDS = {
   A:{ nom:'Monolithe', court:'Bloc de tôle pliée, épaulement à 45° repris du capot, perforations reprises du case.' },
-  B:{ nom:'Losange',   court:'Volume à facettes, large aux haut-parleurs, qui se resserre vers l’instrument et vers le pied.' },
-  C:{ nom:'Portique',  court:'Deux tôles et un caisson suspendu. Ouvert, léger, câblage visible.' }
+  B:{ nom:'Losange',   court:'Volume à facettes, large aux haut-parleurs, qui se resserre vers l’instrument et vers le pied.' }
 };
 
 // haut-parleur coaxial 10 po, face vers +x, plan de montage à x = 0
@@ -75,31 +74,7 @@ export function buildStand(kind,Hs,{open=false,xray=false,color='#333a7c'}={}){
     const plate=(.47*.45-2*.1*.1)*.0105*STEEL;
     Object.assign(info,{ encombrement:[470,450], corps:[335,330], vol:(.30*.295*.30-2*.045*.045*.3)*1000+5-4, kg:1.05*.0015*STEEL+plate+10+18, appui:.222, plaque:'Plaque d’acier 470 × 450 × 10 mm, coins coupés', hp:ys });
   }
-  if(kind==='C'){
-    const ys=Hs*.5,t=.005,xw=.15,b=.2,tt=.0915;
-    const sh=polyShape([[-b,.006],[b,.006],[tt,Hs-.006],[-tt,Hs-.006]]); sh.holes.push(circ(0,ys,.1325));
-    const geo=new THREE.ExtrudeGeometry(sh,{depth:t,bevelEnabled:false,curveSegments:48}); geo.applyMatrix4(new THREE.Matrix4().makeBasis(V(0,0,-1),V(0,1,0),V(1,0,0)));
-    [xw-t,-xw].forEach(x=>{ const m=mesh(geo,skin); m.position.x=x; add(m); });
-    cbox(shell,[-xw,Hs-.008,-tt-.004],[xw,Hs,tt+.004],M.white,.002);
-    [1,-1].forEach(s=>cbox(shell,[s>0?xw-.005:-xw-.06,0,-b],[s>0?xw+.06:-xw+.005,.006,b],M.white,.002));
-    [-.15,.15].forEach(z=>ccyl(shell,.008,.3,[0,.07,z],M.white,'x')); [-.06,.06].forEach(z=>ccyl(shell,.008,.3,[0,Hs-.1,z],M.white,'x'));
-    const cab = xray ? Object.assign(silicone(color),{transparent:true,opacity:.2,depthWrite:false}) : silicone(color);
-    const cs=polyShape([[-.15,ys-.165],[.15,ys-.165],[.15,ys+.165],[-.15,ys+.165]]); cs.holes.push(circ(0,ys,.1165));
-    const cg=new THREE.ExtrudeGeometry(cs,{depth:.288,bevelEnabled:false,curveSegments:48}); cg.applyMatrix4(new THREE.Matrix4().makeBasis(V(0,0,-1),V(0,1,0),V(1,0,0)));
-    const cm=mesh(cg,cab); cm.position.x=-.144; add(cm);
-    inside.add(pair(.1415,ys));
-    if(!open&&!xray){ // grilles rondes perforées
-      const L=[]; for(const s of [1,-1]){ ccyl(shell,.131,.003,[s*.1585,ys,0],M.white,'x');
-        for(let y=-.12;y<=.12;y+=.0085) for(let z=-.12;z<=.12;z+=.0085){ const r=Math.hypot(y,z); if(r<.122) L.push([V(s*.1604,ys+y,z),V(s,0,0),.0034-.0014*(r/.122)*(.5+.5*Math.cos(z*40))]); } }
-      shell.add(dots(L,M.hole)); }
-    amp(shell,0,ys+.02,-.1505);
-    // câble de HP, visible
-    tube(shell,[[.04,ys+.165,-.05],[.05,ys+.22,-.06],[.03,Hs-.06,-.06],[.02,Hs-.01,-.06]],.004,M.cable);
-    tube(shell,[[-.04,ys+.165,-.05],[-.06,ys+.24,-.05],[-.02,Hs-.06,-.07],[-.02,Hs-.01,-.06]],.004,M.cable);
-    const side=((.4+.183)/2*Hs-Math.PI*.1325**2)*t*STEEL*2;
-    Object.assign(info,{ encombrement:[420,400], corps:[300,400], vol:.252*.264*.294*1000-4, kg:side+.42*.4*.006*.35*STEEL+9+18, appui:.2, plaque:'Semelles rapportées 60 × 400 × 6 mm', hp:ys });
-  }
-  if(kind!=='C') [1].forEach(()=>{ const r=.0015; cbox(shell,[-.1352,Hs-.0005,-.0915],[.1352,Hs+.004,-.0915+r],M.white); cbox(shell,[-.1352,Hs-.0005,.0915-r],[.1352,Hs+.004,.0915],M.white); cbox(shell,[-.1352,Hs-.0005,-.0915],[-.1352+r,Hs+.004,.0915],M.white); cbox(shell,[.1352-r,Hs-.0005,-.0915],[.1352,Hs+.004,.0915],M.white); });
+  { const r=.0015; cbox(shell,[-.1352,Hs-.0005,-.0915],[.1352,Hs+.004,-.0915+r],M.white); cbox(shell,[-.1352,Hs-.0005,.0915-r],[.1352,Hs+.004,.0915],M.white); cbox(shell,[-.1352,Hs-.0005,-.0915],[-.1352+r,Hs+.004,.0915],M.white); cbox(shell,[.1352-r,Hs-.0005,-.0915],[.1352,Hs+.004,.0915],M.white); }
   return { group:g, info };
 }
 
@@ -130,7 +105,7 @@ export function buildMic(type,Hs,stand){
     tube(g,[tail,tail.clone().addScaledVector(dir,-.05).add(V(0,-.04,0)),J.clone().add(V(.01,-.03,.02)),V(bx+.02,.9,bz+.01),V(bx+.018,.3,bz),V(bx-.05,.02,bz-.12),V(.15,.012,-.34),V(.05,.02,-.26),V(.03,.12,-.22)],.0033,M.cable,120);
   } else {
     // bras articulé en tube d'acier blanc, fixé au coin arrière droit du stand
-    const y0=stand==='C'?Hs-.004:Hs-.03, P0= stand==='B'?V(.118,Hs-.16,-.135):stand==='C'?V(.142,Hs-.02,-.075):V(.135,Hs-.1,-.125);
+    const P0= stand==='B'?V(.118,Hs-.16,-.135):V(.135,Hs-.1,-.125);
     const P1=V(P0.x+.03,Hs+.3,P0.z-.055); const T=grip.clone().add(V(.0,-.022,0));
     const fl=mesh(new THREE.CylinderGeometry(.02,.02,.05,32),M.dark); fl.position.copy(P0).add(V(.01,0,-.03)); g.add(fl);
     const P0b=V(P0.x+.01,P0.y,P0.z-.03), Pt=V(P0b.x,Hs+.26,P0b.z);
