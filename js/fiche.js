@@ -16,7 +16,7 @@ export function drawPlan(box,S){
   // tronc
   o.push(`<path d="M${X(-O.Rb*.7)} ${Y(-O.Rb*.7)}L${X(-W/2+1.6)} ${Y(-W/2+1.6)}" stroke="${RED}" stroke-width="3"/>`);
   o.push(`<circle cx="${X(0)}" cy="${Y(0)}" r="${O.Rb*k}" fill="#fff" stroke="${INK}" stroke-width="2"/><circle cx="${X(0)}" cy="${Y(0)}" r="${R*k}" fill="${BLUE}" fill-opacity=".14" stroke="${BLUE}" stroke-width="3"/>`);
-  if(F) o.push(`<rect x="${X(-O.P.w/2)}" y="${Y(F.bx0)}" width="${O.P.w*k}" height="${(F.bx1-F.bx0)*k}" fill="none" stroke="${INK}" stroke-dasharray="5 4" stroke-width="1.6"/><rect x="${X(-F.mw/2)}" y="${Y(F.m1[0])}" width="${F.mw*k}" height="${(F.m2[0]-F.m1[0])*k}" fill="none" stroke="${RED}" stroke-dasharray="5 4" stroke-width="1.6"/>`);
+  if(F) for(let u=0;u<O.P.n;u++){ const k=u?-1:1, rc=(x0,x1,w,c)=>{ const a=k*x0,b=k*x1; return `<rect x="${X(-w/2)}" y="${Y(Math.min(a,b))}" width="${w*100}" height="${Math.abs(b-a)*100}" fill="none" stroke="${c}" stroke-dasharray="5 4" stroke-width="1.6"/>`; }; o.push(rc(F.x0,F.x1,O.P.w,INK),rc(F.m1[0],F.m2[0],F.mw,RED)); }
   Object.keys(INSTR).forEach((n,i)=>{ const a=i*Math.PI*2/3, s=Math.sin(a), c=Math.cos(a), x=X(s*Rr), y=Y(c*Rr), deg=-a*180/Math.PI;
     o.push(`<path d="M${X(s*O.Rb)} ${Y(c*O.Rb)}L${X(s*(Rr-.15))} ${Y(c*(Rr-.15))}" stroke="${RED}" stroke-width="2"/>`);
     o.push(`<g transform="translate(${x} ${y}) rotate(${deg})"><rect x="-23" y="-23" width="46" height="46" fill="#fff" stroke="${INK}" stroke-width="1.5"/><rect x="-13.3" y="-9" width="26.6" height="18" fill="${BLUE}"/><path d="M16 -11l16 -8v38l-16 -8zM-16 -11l-16 -8v38l16 -8z" fill="${INK}"/><path d="M38 0h52m-10 -6l10 6l-10 6M-38 0h-52m10 -6l-10 6l10 6" fill="none" stroke="${GREY}" stroke-width="1.6"/><circle cx="0" cy="52" r="20" fill="none" stroke="${GREY}" stroke-width="2"/></g>`);
@@ -24,7 +24,7 @@ export function drawPlan(box,S){
   o.push(`<g transform="translate(${X(-W/2+1.35)} ${Y(-W/2+1.35)}) rotate(-45)"><rect x="-80" y="-35" width="160" height="70" fill="#fff" stroke="${INK}" stroke-width="2"/><text y="7" text-anchor="middle" font-size="20" font-weight="600">Régie</text></g>`);
   o.push(`<text x="${X(-O.Rb)-12}" y="${Y(.5)}" text-anchor="end" font-size="18" font-weight="600" fill="${BLUE}">image ${fr(S.diam,2)} pi · ${fr(2*R,2)} m</text>`);
   o.push(`<text x="${X(.2)}" y="${Y(O.Rb+.28)}" font-size="19">${fr(S.ecart)} mm</text>`);
-  o.push(`<text x="${w/2}" y="${w+38}" text-anchor="middle" font-size="20">Salle ${fr(W,1)} × ${fr(W,1)} m, quadrillage de 1 m. Socle Ø ${fr(O.Rb*2,2)} m, ${PROJ[S.proj].nom}.</text><text x="${w/2}" y="${w+68}" text-anchor="middle" font-size="20">Instruments à ${fr(2*Rr*Math.sin(Math.PI/3),2)} m l’un de l’autre, centre à centre.</text>`);
+  o.push(`<text x="${w/2}" y="${w+38}" text-anchor="middle" font-size="20">Salle ${fr(W,1)} × ${fr(W,1)} m, quadrillage de 1 m. Socle Ø ${fr(O.Rb*2,2)} m, ${PROJ[S.proj].titre.toLowerCase().replace('ht','HT').replace('st','ST')}.</text><text x="${w/2}" y="${w+68}" text-anchor="middle" font-size="20">Instruments à ${fr(2*Rr*Math.sin(Math.PI/3),2)} m l’un de l’autre, centre à centre.</text>`);
   box.innerHTML=`<svg viewBox="-10 -10 ${w+20} ${w+m}" style="max-width:860px;margin:auto" role="img" aria-label="Plan de l’espace">${o.join('')}</svg>`;
 }
 
@@ -75,15 +75,17 @@ export function drawSignal(box){
 }
 
 export function drawChoix(box,S){
-  const o=optics(S), e=optics({...S,proj:'epson',diam:5,ecranH:950}), h=optics({...S,proj:'ht2150',diam:3.75,ecranH:950}), cm=v=>fr(v*100);
+  const e=optics({proj:'duo',diam:6,ecranH:950}), h=optics({proj:'solo',diam:3.75,ecranH:950}), cm=v=>fr(v*100), lx=v=>fr(Math.round(v/50)*50);
   const Q=[
-   ['Le projecteur',[`Kit Epson Pro L1505U avec l’objectif ELPLU03S, de la liste de prêt. Avec cet objectif, son rapport est de 0,48 à 0,57 : il est à plat dans le socle et tire vers un miroir à 45°. Image de 5 pi (1,52 m), socle rond de ${fr(e.Rb*2,2)} m, toile à 95 cm. Aucun projecteur debout ni au plafond.`,
-     `Plan B de la même liste : le BenQ HT2150ST (cinq exemplaires), suspendu à l’envers dans le socle. Image de 3,75 pi (1,14 m) et socle de ${fr(h.Rb*2,2)} m.`]],
-   ['À vérifier sur l’Epson',[`Longueur de l’objectif qui dépasse du boîtier (10 cm dans le modèle), hauteur de l’axe, et décentrement vertical réel (± 24 % selon Epson pour cette taille d’appareil). Le modèle utilise ${fr(Math.abs(e.f.sh/e.f.Di)*100)} %.`,
-     `Chaleur et bruit : jusqu’à 955 W et 39 dB, 33 dB en Eco. Le socle doit être ventilé, et le laser peut être baissé : à pleine puissance la toile reçoit environ ${fr(Math.round(e.lux/50)*50)} lx.`]],
-   ['Le miroir',[`Environ ${cm(e.f.ml)} × ${cm(e.f.mw)} cm, à première surface (sinon l’image se dédouble). Verre ou film tendu sur cadre. Le socle doit garder l’angle de 45° au demi-degré près : prévoir trois vis de réglage.`]],
-   ['La toile',[`L’incidence ne dépasse pas ${fr(e.inc)}° : une toile tendue devient possible. Un creux de 5 mm déplace l’image d’environ ${fr(5*Math.tan(e.inc*Math.PI/180))} mm. Une plaque rigide reste préférable si le public peut s’y appuyer.`,
-     `Dans une galerie blanche, les noirs de l’image montent avec la lumière de la salle : choisir une toile grise de rétroprojection, et garder la lumière basse autour du disque.`]],
+   ['Les projecteurs',[`Deux BenQ HT2150ST de la liste de prêt (379 × 277 × 122 mm, 3,6 kg), dos à dos au centre du socle, à l’envers comme au plafond et à plat. Chacun tire vers un miroir à 45° au bord et éclaire un demi-disque. Image de 6 pi (1,83 m), socle rond de ${fr(e.Rb*2,2)} m, toile à 95 cm, environ ${lx(e.lux)} lx.`,
+     `Version simple : un seul HT2150ST, image de 3,75 pi (1,14 m), socle de ${fr(h.Rb*2,2)} m. Il resterait trois ou quatre appareils en réserve.`]],
+   ['Raccord des deux images',[`Les deux demi-images se recouvrent de ${cm(.12)} cm au milieu. Il faut deux sorties vidéo en 1920 × 1080 et un fondu de raccord : soit une page de sortie double dans Palinopsia, soit Spout vers un logiciel de mapping.`,
+     `Une œuvre sombre au centre rendrait le raccord presque invisible : les noirs d’un DLP se superposent sur cette bande.`]],
+   ['À vérifier sur le HT2150ST',[`Le décalage vertical est donné à 102,5 % ou à 105 % selon la source : le calcul accepte les deux, et la position finale se règle en bougeant le miroir. Vérifier aussi la place de l’objectif dans le boîtier, estimée ici, et le menu de projection au plafond.`,
+     `Les lampes : deux appareils tirent jusqu’à 353 W chacun. Prévoir deux ventilateurs lents dans le socle.`]],
+   ['Les miroirs',[`Deux plaques d’environ ${cm(e.f.ml)} × ${cm(e.f.mw)} cm, à première surface (sinon l’image se dédouble). Trois vis de réglage par miroir : un degré d’erreur déplace l’image de plusieurs centimètres.`]],
+   ['La toile',[`L’incidence ne dépasse pas ${fr(e.inc)}°. Une toile tendue est possible : un creux de 5 mm déplace l’image d’environ ${fr(5*Math.tan(e.inc*Math.PI/180))} mm. Une plaque rigide reste préférable si le public peut s’y appuyer.`,
+     `Dans une galerie blanche, les noirs montent avec la lumière de la salle : toile grise de rétroprojection, très diffusante, et lumière basse autour du disque.`]],
    ['Des 10 po dans un instrument de 179 mm',[`Un coaxial de 10 po fait ${DRIVER.d} mm de diamètre et ${DRIVER.depth} mm de profondeur de montage. Dos à dos, il faut au moins 290 mm de large et 290 mm de profond : le stand est forcément plus profond que le case (179 mm). Le Monolithe règle l’écart par un épaulement, le Losange par ses facettes.`]],
    ['Large bande ou grave',[`Un haut-parleur de 10 po seul ne monte pas dans l’aigu. La maquette suppose des coaxiaux (10 po et moteur d’aigu au centre). Une autre voie, à la Barefoot : 10 po latéraux pour le grave et un petit large bande vers le joueur.`]],
    ['Vibrations et IMU',[`Les deux haut-parleurs sont sous la base molle : leurs vibrations peuvent entrer dans l’IMU. Le montage dos à dos annule les forces seulement si les deux membranes jouent la même chose. D’où des graves sommés en mono, et un filtre passe-bas sur l’IMU.`]],

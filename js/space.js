@@ -42,32 +42,42 @@ export function screenMaterial(R,cyl){
     fragmentShader:'uniform float uAlpha;\n'+FRAG });
 }
 
-// Projecteur à plat dans le socle, miroir à 45°, image vers le haut.
-// Plan (x,z) : disque de -R à R à z = H ; miroir z = x - c ; objectif en (-x0, z0), axe vers +x.
-// Cherche le plus petit socle rond sans que le boîtier fasse ombre.
+// Projecteurs à plat dans le socle, miroirs à 45°, image vers le haut. Plan (x,z), disque de -R à R à z = H.
+// Cherche le plus petit socle rond où rien ne fait ombre. Pour deux projecteurs, le second est le symétrique (x -> -x).
+const inP=(x,z,Q)=>{ let c=false; for(let i=0,n=Q.length;i<n;i++){ const [x1,z1]=Q[i],[x2,z2]=Q[(i+1)%n]; if((z1>z)!==(z2>z)&&x<(x2-x1)*(z-z1)/(z2-z1)+x1) c=!c; } return c; };
+const ori=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
+const hits=(A,B)=>{ for(let i=0;i<A.length;i++) for(let j=0;j<B.length;j++){ const a=A[i],b=A[(i+1)%A.length],c=B[j],d=B[(j+1)%B.length]; if(ori(a,b,c)*ori(a,b,d)<0&&ori(c,d,a)*ori(c,d,b)<0) return true; } return inP(...A[0],B)||inP(...B[0],A); };
+const flip=Q=>Q.map(([x,z])=>[-x,z]);
+export const OV=.12;
 export function solve(P,R,H){
-  const Di=2*R*1.02, T=P.tr*P.aspect*Di, A=T-H; let best=null;
-  for(let si=0;si<=40;si++){ const sh=(P.s[0]+(P.s[1]-P.s[0])*si/40)*Di;
-    for(let z0=P.bot+.03;z0<.8;z0+=.01){
-      const c=sh-z0, xl=-(A-c), mir=X=>{ const den=T-X+sh; if(den<=0) return null; const u=(A+z0)/den, z=-A+u*T; return [z+c,z,u]; }, m1=mir(-R), m2=mir(R);
-      if(!m1||!m2||m1[1]<.025||m2[1]>H-.06||m1[0]<xl+.04||m1[2]<=0||m1[2]>=1||m2[2]>=1) continue;
-      const ray=x=>x>=m1[0]?-1:x<=-R?9:m1[1]+(H-m1[1])*(x-m1[0])/(-R-m1[0]), bx1=xl-P.lens, bx0=bx1-P.dep;
-      if(ray(xl)<z0+(P.lens>0?.075:P.top)+.015||ray(bx1)<z0+P.top+.015||z0+P.top>H-.08) continue;
-      const Rb=Math.max(Math.hypot(bx0,P.w/2),Math.abs(m2[0]),R)+.03; if(best&&Rb>=best.Rb) continue;
-      best={ Rb,sh,Di,T,A,z0,c,xl,bx0,bx1,m1,m2,mir };
+  const duo=P.n===2, Xa=-R, Xb=duo?OV/2:R, need=Xb-Xa, w=Math.max(2*R*1.02,need*1.02*P.aspect), h=w/P.aspect, T=P.tr*w; let best=null;
+  for(const fr of duo?[0,.5,1]:[.5]) for(const lean of [1,-1]) for(const sv of P.s) for(const sg of [1,-1]){
+    const Xc=(Xa+Xb)/2+(fr-.5)*(h-need)*.9, pv=[Xc+sv*h*lean,H-T], n=[-Math.SQRT1_2*sg,Math.SQRT1_2];
+    const refl=v=>{ const d=v[0]*n[0]+v[1]*n[1]; return [v[0]-2*d*n[0],v[1]-2*d*n[1]]; }, ax=refl([0,1]), up=refl([-lean,0]);
+    for(let q=-R-.4;q<=R+.4;q+=.02){
+      const m0=[q,.03], off=(pv[0]-q)*n[0]+(pv[1]-.03)*n[1]; if(off>=-.02) continue;
+      const M=X=>{ const d=[X-pv[0],T], k=-off/(d[0]*n[0]+d[1]*n[1]); return [pv[0]+k*d[0],pv[1]+k*d[1],k]; }, m1=M(Xa), m2=M(Xb);
+      if(!(m1[2]>0&&m1[2]<.97&&m2[2]>0&&m2[2]<.97)||Math.min(m1[1],m2[1])<.025||Math.max(m1[1],m2[1])>H-.08) continue;
+      const r=refl([pv[0]-q,pv[1]-.03]), L=[q+r[0],.03+r[1]], at=(d,e)=>[L[0]-ax[0]*d+up[0]*e,L[1]-ax[1]*d+up[1]*e], mk=d=>[at(d,P.up),at(d,-P.dn),at(P.dep,-P.dn),at(P.dep,P.up)], bd=mk(0);
+      const zs=bd.map(p=>p[1]); if(Math.min(...zs)<.03||Math.max(...zs)>H-.05) continue;
+      let Rb=Math.max(...bd.map(p=>Math.hypot(p[0],P.w/2)),R)+.03; if(best&&Rb>=best.Rb-1e-4) continue;
+      const p2=m=>[m[0],m[1]], beam=[p2(m1),p2(m2),[Xb,H],[Xa,H]], inc=[[L[0]+ax[0]*.004,L[1]+ax[1]*.004],p2(m1),p2(m2)], back=[p2(m1),p2(m2),[m2[0]-n[0]*.02,m2[1]-n[1]*.02],[m1[0]-n[0]*.02,m1[1]-n[1]*.02]];
+      if(hits(bd,beam)||hits(mk(.006),inc)||hits(back,bd)||bd.some(p=>inP(p[0]+.015,p[1],beam)||inP(p[0]-.015,p[1],beam))) continue;
+      if(duo&&([beam,inc,bd].some(Q=>hits(bd,flip(Q)))||[beam,inc,bd,back].some(Q=>hits(back,flip(Q))))) continue;
+      let mw=0; for(let i=0;i<=30;i++){ const X=Xa+(Xb-Xa)*i/30, m=M(X), y=m[2]*Math.sqrt(Math.max(R*R-X*X,0)); mw=Math.max(mw,y); Rb=Math.max(Rb,Math.hypot(m[0],y)+.04); }
+      if(best&&Rb>=best.Rb-1e-4) continue;
+      best={ Rb,T,w,h,pv,L,ax:ax[0],up:up[1],sg,m1,m2,M,Xa,Xb,x0:Math.min(...bd.map(p=>p[0])),x1:Math.max(...bd.map(p=>p[0])),z0:Math.min(...zs),z1:Math.max(...zs),ml:Math.hypot(m2[0]-m1[0],m2[1]-m1[1])+.05,mw:2*mw+.05,sv };
     } }
-  if(best){ let wy=0; for(let i=-40;i<=40;i++){ const X=R*i/40; wy=Math.max(wy,best.mir(X)[2]*Math.sqrt(Math.max(R*R-X*X,0))); } best.mw=2*wy+.06; best.ml=(best.m2[1]-best.m1[1])*Math.SQRT2+.05; }
   return best;
 }
 const CACHE=new Map();
 export function optics(s){
   const k=[s.proj,s.diam,s.ecranH].join(); if(CACHE.has(k)) return CACHE.get(k);
   const P=PROJ[s.proj], R=s.diam*FT/2, H=s.ecranH/1000, f=solve(P,R,H), o={ P,R,H,f,Rb:f?f.Rb:R+.1 };
-  o.px=2*R*1.02/P.px*1000; o.lux=P.lm*.9*(Math.PI/4/P.aspect)/1.02/1.02/(Math.PI*R*R);
-  if(f){ o.inc=Math.atan2(R+Math.abs(f.sh),f.T)*180/Math.PI; o.rim=f.Rb-R; }
+  if(f){ o.px=f.h/P.px*1000; o.lux=P.lm*.9/(f.w*f.h); o.rim=f.Rb-R; let t=0; for(let i=0;i<=60;i++){ const X=f.Xa+(f.Xb-f.Xa)*i/60; t=Math.max(t,Math.hypot(X-f.pv[0],Math.sqrt(Math.max(R*R-X*X,0)))); } o.inc=Math.atan2(t,f.T)*180/Math.PI; }
   CACHE.set(k,o); return o;
 }
-export function diamMax(s){ let m=0; for(let d=3;d<=7.001;d+=.25) if(solve(PROJ[s.proj],d*FT/2,s.ecranH/1000)) m=d; return m; }
+export function diamMax(s){ let m=3; for(let d=3;d<=7.001;d+=.25){ const f=solve(PROJ[s.proj],d*FT/2,s.ecranH/1000); if(f&&f.Rb-d*FT/2<.2) m=d; } return m; }
 
 export function buildSpace(s,lists){
   const g=new THREE.Group(), R=s.diam*FT/2, H=s.ecranH/1000, RW=s.salle, RH=3.8, out={ g, inst:[], lights:[] };
@@ -92,30 +102,33 @@ export function buildSpace(s,lists){
   // prises d'air : même trame que le case
   const L=[[],[]]; for(let j=0;j<6;j++) for(let i=0;i<360;i++){ const a=i/360*TAU, w=.5+.5*Math.cos(a*6+j*.5), r=.0016+.0046*w*(1-j/7); L[Math.sin(a)>0?1:0].push([V(Math.sin(a)*(Rb-.0052),.085+j*.02,Math.cos(a)*(Rb-.0052)),V(Math.sin(a),0,Math.cos(a)),r]); }
   L.forEach((l,k)=>{ const d=dots(l,M.hole); scr.add(d); half[k].push(d); });
-  // --- projecteur, miroir, faisceau. Repère du calcul : x -> z du monde
+  // --- projecteurs, miroirs, faisceaux. Repère du calcul : x -> z du monde
   const pj=new THREE.Group(); scr.add(pj); out.proj=pj; const beams=new THREE.Group(); scr.add(beams); out.beams=beams;
-  if(F){
-    const W3=(x,y,z)=>V(y,z,x), bx=(x0,y0,z0,x1,y1,z1,m,r)=>cbox(pj,[y0,z0,x0],[y1,z1,x1],m,r);
-    bx(F.bx0,-P.w/2,F.z0-P.bot,F.bx1,P.w/2,F.z0+P.top,P.lens?M.white:M.black,.02);
-    for(let i=0;i<12;i++) bx(F.bx0+.05+i*.03,P.w/2-.002,F.z0-P.bot*.5,F.bx0+.062+i*.03,P.w/2+.002,F.z0+P.top*.6,M.hole);
-    const lr=P.lens?.07:.035, ln=ccyl(pj,lr,Math.max(P.lens,.02)+.02,[0,F.z0,F.xl-Math.max(P.lens,.02)/2],M.black,'z'); ccyl(pj,lr*.78,.004,[0,F.z0,F.xl+.011],M.pad,'z');
-    const yb=F.z0-P.bot; if(yb>.06){ [-1,1].forEach(k=>[F.bx0+.06,F.bx1-.06].forEach(x=>rod(pj,[k*P.w*.4,0,x],[k*P.w*.4,yb,x],.012,M.dark))); bx(F.bx0+.02,-P.w/2,yb-.012,F.bx1-.02,P.w/2,yb,M.dark,.003); }
-    if(P.inverse){ const yt=F.z0+P.top; bx(F.bx0+.03,-P.w/2,yt,F.bx1-.03,P.w/2,yt+.01,M.dark,.003); }
+  if(F) for(let u=0;u<P.n;u++){
+    const G=new THREE.Group(), B=new THREE.Group(); G.rotation.y=B.rotation.y=u*Math.PI; pj.add(G); beams.add(B);
+    const W3=(x,y,z)=>V(y,z,x), bx=(x0,y0,z0,x1,y1,z1,m,r)=>cbox(G,[y0,z0,x0],[y1,z1,x1],m,r);
+    bx(F.x0,-P.w/2,F.z0,F.x1,P.w/2,F.z1,M.white,.02);
+    for(let i=0;i<9;i++) bx(F.x0+.05+i*.02,P.w/2-.002,F.z0+.03,F.x0+.06+i*.02,P.w/2+.002,F.z1-.03,M.hole);
+    ccyl(G,.036,.03,[-.06,F.L[1],F.L[0]-F.ax*.006],M.black,'z'); ccyl(G,.028,.004,[-.06,F.L[1],F.L[0]+F.ax*.011],M.pad,'z');
+    // support : plaque et quatre pattes
+    bx(F.x0+.015,-P.w/2+.02,F.z0-.012,F.x1-.015,P.w/2-.02,F.z0-.002,M.dark,.003);
+    [-1,1].forEach(k=>[F.x0+.04,F.x1-.04].forEach(x=>rod(G,[k*P.w*.4,0,x],[k*P.w*.4,F.z0-.01,x],.009,M.dark)));
     // miroir
-    const dx=F.ml/2/Math.SQRT2, mx=(F.m1[0]+F.m2[0])/2, mz=(F.m1[1]+F.m2[1])/2, mg=new THREE.Group(); mg.position.copy(W3(mx,0,mz)); mg.rotation.x=-Math.PI/4; pj.add(mg);
-    const sh=k=>{ const q=new THREE.Shape(); for(let n=0;n<64;n++){ const a=n/64*TAU, X=Math.sin(a)*R, m=F.mir(X), tt=((m[0]-mx)+(m[1]-mz))/Math.SQRT2, yy=m[2]*Math.cos(a)*R; const f=1+k/Math.max(Math.hypot(tt,yy),.05); n?q.lineTo(yy*f,-tt*f):q.moveTo(yy*f,-tt*f); } return q; };
-    const back=mesh(new THREE.ExtrudeGeometry(sh(.02),{depth:.006,bevelEnabled:false}).rotateX(-Math.PI/2),M.dark); back.position.y=-.008; mg.add(back);
-    mg.add(mesh(new THREE.ShapeGeometry(sh(.015)).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:'#e8edf2',metalness:1,roughness:.03}),false));
-    [-1,1].forEach(k=>{ const x=k*F.mw*.2, zt=mx+dx*.75, yt=mz+dx*.75-.02; rod(pj,[x,0,zt],[x,yt,zt],.01,M.dark); rod(pj,[x,.01,mx-dx+.02],[x,.01,zt],.01,M.dark); });
+    const mx=(F.m1[0]+F.m2[0])/2, mz=(F.m1[1]+F.m2[1])/2, mg=new THREE.Group(); mg.position.copy(W3(mx,0,mz)); mg.rotation.x=-F.sg*Math.PI/4; G.add(mg);
+    const rim=[]; for(let n=0;n<=48;n++){ const X=F.Xa+(F.Xb-F.Xa)*n/48; rim.push([X,Math.sqrt(Math.max(R*R-X*X,0))]); } const full=[...rim,...[...rim].reverse().map(([X,y])=>[X,-y])];
+    const plate=k=>{ const q=new THREE.Shape(); full.forEach(([X,y],i)=>{ const m=F.M(X), t=((m[0]-mx)+F.sg*(m[1]-mz))*Math.SQRT1_2, yy=m[2]*y, f=1+k/Math.max(Math.hypot(t,yy),.06); i?q.lineTo(yy*f,-t*f):q.moveTo(yy*f,-t*f); }); return q; };
+    const bk=mesh(new THREE.ExtrudeGeometry(plate(.022),{depth:.006,bevelEnabled:false}).rotateX(-Math.PI/2),M.dark); bk.position.y=-.008; mg.add(bk);
+    mg.add(mesh(new THREE.ShapeGeometry(plate(.016)).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:'#e8edf2',metalness:1,roughness:.03}),false));
+    const hi=F.m1[1]>F.m2[1]?F.m1:F.m2, lo=F.m1[1]>F.m2[1]?F.m2:F.m1, hx=lo[0]+(hi[0]-lo[0])*.8, hz=lo[1]+(hi[1]-lo[1])*.8-.02; [-1,1].forEach(k=>{ const x=k*F.mw*.16; rod(G,[x,0,hx],[x,hz,hx],.008,M.dark); rod(G,[x,.01,lo[0]],[x,.01,hx],.008,M.dark); });
     // faisceau
-    const bm=new THREE.MeshBasicMaterial({color:'#7f9dff',transparent:true,opacity:.075,side:THREE.DoubleSide,depthWrite:false}), ed=new THREE.LineBasicMaterial({color:'#4565d8',transparent:true,opacity:.8});
-    const lens=W3(F.xl,0,F.z0), ma=[], di=[]; for(let n=0;n<=72;n++){ const a=n/72*TAU, X=Math.sin(a)*R, Yy=Math.cos(a)*R, m=F.mir(X); ma.push(W3(m[0],m[2]*Yy,m[1])); di.push(W3(X,Yy,H)); }
-    const t1=[],t2=[]; for(let n=0;n<72;n++){ t1.push(lens,ma[n],ma[n+1]); t2.push(ma[n],di[n],di[n+1],ma[n],di[n+1],ma[n+1]); }
-    [t1,t2].forEach(t=>beams.add(new THREE.Mesh(new THREE.BufferGeometry().setFromPoints(t),bm)));
-    for(let n=0;n<72;n+=6) beams.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([lens,ma[n],di[n]]),ed));
+    const bm=new THREE.MeshBasicMaterial({color:u?'#e0604a':'#5f7fe8',transparent:true,opacity:.085,side:THREE.DoubleSide,depthWrite:false}), ed=new THREE.LineBasicMaterial({color:u?'#c4232c':'#3653c4',transparent:true,opacity:.75});
+    const lens=W3(F.L[0],0,F.L[1]), ma=full.map(([X,y])=>{ const m=F.M(X); return W3(m[0],m[2]*y,m[1]); }), di=full.map(([X,y])=>W3(X,y,H)), N=full.length, t1=[],t2=[];
+    for(let n=0;n<N;n++){ const k=(n+1)%N; t1.push(lens,ma[n],ma[k]); t2.push(ma[n],di[n],di[k],ma[n],di[k],ma[k]); }
+    [t1,t2].forEach(t=>B.add(new THREE.Mesh(new THREE.BufferGeometry().setFromPoints(t),bm)));
+    for(let n=0;n<N;n+=8) B.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([lens,ma[n],di[n]]),ed));
   }
   // moyeu : commutateur + alimentation
-  cbox(scr,[-Rb*.62-.1,.02,.02],[-Rb*.62+.1,.14,.3],M.dark,.006);
+  cbox(scr,[-Rb*.7-.08,.02,-.14],[-Rb*.7+.08,.14,.14],M.dark,.006);
   out.setCut=v=>{ half[1].forEach(m=>m.visible=!v); mat.uniforms.uAlpha.value=v?.6:1; out.inst.forEach((a,i)=>a.g.visible=!(v&&i===1)); out.players.children[1].visible=!v; };
   out.setBeams=v=>{ beams.visible=v; };
   const cyl=false;

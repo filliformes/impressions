@@ -27,7 +27,7 @@ Chaque instrument tourne sur [Pandore](https://github.com/filliformes/pandore) e
 
 ## L'espace
 
-Une galerie blanche. Un disque horizontal de 5 pi (1,52 m), rétroprojeté par en dessous, dans un socle rond en tôle blanche. Le projecteur est à plat dans le socle et tire vers un miroir à 45°. La maquette cherche le plus petit socle sans ombre portée, selon le projecteur, le diamètre et la hauteur de la toile.
+Une galerie blanche. Un disque horizontal de 6 pi (1,83 m), rétroprojeté par en dessous, dans un socle rond en tôle blanche de 1,96 m. Deux petits projecteurs à plat, dos à dos au centre, tirent chacun vers un miroir à 45° et éclairent un demi-disque. La maquette cherche le plus petit socle sans ombre portée.
 
 ![Coupe](img/coupe.jpg)
 
