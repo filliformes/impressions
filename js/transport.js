@@ -7,8 +7,9 @@ import { PAD_OFF } from './assembly.js';
 import { optics, GAP, secteurs } from './optics.js';
 import { buildScreen, TUBE, MAT_D } from './screen.js';
 import { SUB, TRAY } from './tech.js';
+import { AMPLI } from './interieur.js';
 
-export const SOUTE = { kg:23, max:32, somme:158, src:'https://www.aircanada.com/ca/en/aco/home/plan/baggage/checked.html' };
+export const SOUTE = { kg:23, max:32, tol:.3, somme:158, src:'https://www.aircanada.com/ca/en/aco/home/plan/baggage/checked.html' };
 const COL = { inst:'#3a4190', son:'#26272b', stand:'#b9bbbf', ecran:'#e9e8e4', optique:'#c4232c', tech:'#d2a62c' };
 export const colOf = g => COL[g];
 
@@ -24,7 +25,7 @@ export function items(s){
   add('inst','Instrument (case, FLOU, Pandore)',3,.2664,.1789,.105,3.2);
   add('inst',s.tBase==='creuse'?'Base molle creuse':'Base molle pleine',3,.2664,.1789,.08,s.tBase==='creuse'?1.9:4.3);
   const hb=(s.stand==='A'?Hs:m.sh)-m.yh, wood=2*(m.W*m.D+m.W*hb+m.D*hb)*.009*700;
-  add('son',`Caisson ${H.po}, ampli compris`,3,m.W,m.D,hb,wood+2*H.kg+.9);
+  add('son',`Caisson ${H.po}, ampli et filtres compris`,3,m.W,m.D,hb,wood+2*H.kg+AMPLI.kg+.3);
   const hc=m.yh-m.y0, hc2=s.stand==='B'?Hs-m.sh:0, L=hc+hc2, p=parts(L,max);
   add('stand',`Mât du stand, en ${p>1?p+' bouts':'un bout'}`,3,L/p,.042*p,.042,L*kt(.038,.003)+.15);
   if(s.tCol==='tole'){ const q=parts(Math.max(hc,hc2),max); add('stand','Tôles d’alu à plat (1,5 mm)',3,Math.max(m.W,m.D),Math.max(hc,hc2)/q,(hc2?8:4)*q*.002,2*(m.W+m.D)*L*.0015*2700*(hc2?.8:1)); }

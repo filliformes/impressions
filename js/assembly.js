@@ -1,7 +1,7 @@
 // Assemblage d'un instrument complet, personnages d'échelle.
 import * as THREE from 'three';
 import { M, mesh, rod, tube } from './util.js';
-import { CASE as C, PCB, BACK, BASE_H, SILICONE } from './data.js';
+import { CASE as C, PCB, BACK, BASE_H, SILICONE, INSTR } from './data.js';
 import { buildCase, buildSoft, oledCanvas } from './instrument.js';
 import { buildStand, buildMic } from './stands.js';
 
@@ -11,29 +11,32 @@ const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 export function buildAssembly(o){
   const Hs = o.padH/1000 - PAD_OFF, g = new THREE.Group();
   const oled = oledCanvas(); oled.draw(o.nom||'RES',0);
-  const { group:stand, info } = buildStand(o.stand,Hs,{open:o.open,xray:o.xray,hp:o.hp||'hp10'});
+  const { group:stand, info, eclate } = buildStand(o.stand,Hs,{open:o.open,xray:o.xray,hp:o.hp||'hp10'});
   g.add(stand);
   const y0 = Hs + (BASE_H-C.zBottom)/1000;
-  const soft = buildSoft(SILICONE[o.silicone]); g.add(soft);
+  const clair = o.silicone==='clair', soft = buildSoft(SILICONE[o.silicone],clair); g.add(soft);
   const tilt = new THREE.Group(), cs = buildCase(oled); tilt.add(cs); g.add(tilt);
   const mic = buildMic(o.mic,Hs,info.dims); g.add(mic);
   const cables = new THREE.Group(); g.add(cables); buildCables(cables,Hs,y0,info.dims);
   const P = cs.userData.parts, pivot = 25/1000;
-  const set = { e:0, rx:0, rz:0 };
+  // lueur de la bande LED, à la couleur de l'instrument
+  const col=new THREE.Color(INSTR[o.nom||'RES'].led), uni=soft.userData.uni, lum=new THREE.PointLight(col,0,.7,2); lum.position.set(0,y0-.02,0); g.add(lum); uni.uCol.value.copy(col);
+  const lueur=v=>{ const a=o.led===false?0:v; uni.uLed.value=a*(clair?1:.22); P.ledMat.color.copy(col).lerp(new THREE.Color('#ffffff'),.35).multiplyScalar(.15+1.5*a); lum.intensity=a*(clair?.16:.05); };
+  const set = { e:0, s:0, rx:0, rz:0 };
   function apply(){
     const e=set.e;
-    soft.position.y = y0 + e*.05;
-    tilt.position.y = y0 - pivot + e*.16; cs.position.y = pivot;
+    soft.position.y = y0 + e*.02;
+    tilt.position.y = y0 - pivot + e*.17; cs.position.y = pivot;
     tilt.rotation.set(set.rx,0,set.rz,'XZY');
     soft.userData.uni.uTilt.value.set(-set.rz,-set.rx);
-    P.bottom.position.z=0; P.pandore.position.z=e*55; P.body.position.z=e*120; P.flou.position.z=e*170; P.cover.position.z=e*215; P.controls.position.z=e*265;
-    P.flou.visible=e>.02; cables.visible=e<.02; mic.visible=e<.12;
+    P.led.position.z=-e*34; P.bottom.position.z=0; P.pandore.position.z=e*55; P.body.position.z=e*120; P.flou.position.z=e*170; P.cover.position.z=e*215; P.controls.position.z=e*265;
+    P.flou.visible=e>.02; cables.visible=e<.02&&set.s<.02; mic.visible=e<.12&&set.s<.12; eclate(set.s);
   }
-  apply();
+  apply(); lueur(.8);
   // masse totale : stand + HP + ampli + instrument + base molle (+ bras)
   info.kg += 3.2 + 4.3 + (o.mic==='bras'?1.6:0);
   info.Hs=Hs; info.bascule = info.kg*9.81*info.appui/(o.padH/1000);
-  return { g, info, oled, set, apply, tilt, soft, cs, mic, nom:o.nom||'RES', Hs, y0 };
+  return { g, info, stand, oled, set, apply, lueur, tilt, soft, cs, mic, nom:o.nom||'RES', Hs, y0 };
 }
 
 function buildCables(g,Hs,y0,m){

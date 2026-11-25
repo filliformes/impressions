@@ -29,7 +29,7 @@ export function buildSpace(s){
   const cables=new THREE.Group(), pub=new THREE.Group(), players=new THREE.Group(); g.add(cables,pub,players); out.cables=cables; out.cabI=[]; out.sats=[]; out.visitors=pub; out.players=players;
   const under=H>.05;                                         // les câbles passent sous le dessus
   Object.keys(INSTR).forEach((n,i)=>{
-    const a=i*TAU/3, S=Math.sin(a), C=Math.cos(a), as=buildAssembly({stand:s.stand,mic:s.mic,open:s.open,xray:false,silicone:s.silicone,padH:s.padH,nom:n,hp:s.hp});
+    const a=i*TAU/3, S=Math.sin(a), C=Math.cos(a), as=buildAssembly({stand:s.stand,mic:s.mic,open:s.open,xray:false,silicone:s.silicone,led:s.led,padH:s.padH,nom:n,hp:s.hp});
     as.g.position.set(S*Rr,0,C*Rr); as.g.rotation.y=a; g.add(as.g); as.angle=a; out.inst.push(as);
     const pl=person({h:[1.72,1.62,1.8][i],pose:'joue',handY:s.padH/1000,mat:M.fig}), pr=Rr+.41; pl.position.set(S*pr,0,C*pr); pl.rotation.y=a; players.add(pl);
     const tg=V(C,0,-S), rd=V(S,0,C), p=(r,o,y)=>rd.clone().multiplyScalar(r).addScaledVector(tg,o).setY(y), cb=new THREE.Group(); cables.add(cb); out.cabI.push(cb);

@@ -26,7 +26,7 @@ export function initMaterials(){
   M.pcb    = std({ color:'#12314a', roughness:.5 });
   M.pcb2   = std({ color:'#16181c', roughness:.5 });
   M.gold   = std({ color:'#c9a552', roughness:.35, metalness:.9 });
-  M.cone   = std({ color:'#24262a', roughness:.85, side:THREE.DoubleSide });
+  M.cone   = std({ color:'#3c3f45', roughness:.9, side:THREE.DoubleSide });
   M.surround=std({ color:'#101113', roughness:.6 });
   M.cable  = std({ color:'#141518', roughness:.65 });
   M.hole   = new THREE.MeshBasicMaterial({ color:'#0c0d0f' });
@@ -38,7 +38,12 @@ export function initMaterials(){
   M.ply    = std({ color:'#cdb78f', roughness:.75 });
   M.ramp   = std({ color:'#4a4540', roughness:.9 });
   M.skirt  = std({ color:'#1b1d24', roughness:.95, side:THREE.DoubleSide });
+  M.copper = std({ color:'#b5723c', roughness:.35, metalness:.85, side:THREE.DoubleSide });
+  M.kapton = std({ color:'#a8742c', roughness:.5, side:THREE.DoubleSide });
+  M.spider = std({ color:'#c9a545', roughness:.9, side:THREE.DoubleSide });
+  M.plyG   = std({ color:'#cdb78f', roughness:.75, transparent:true, opacity:.28, depthWrite:false, side:THREE.DoubleSide });
   const t = noiseTex(128,120,136,18); M.white.bumpMap = t; M.white.bumpScale = .12;
+  M.whiteD = M.white.clone(); M.whiteD.side = THREE.DoubleSide;
   const g = document.createElement('canvas'); g.width=g.height=64; const x=g.getContext('2d');
   x.fillStyle='#fff'; x.fillRect(0,0,64,64); x.fillStyle='#2a2a2a';
   for(let i=0;i<8;i++) for(let j=0;j<8;j++) x.fillRect(i*8+2,j*8+2,5,5);
@@ -86,13 +91,14 @@ export function rod(g,a,b,r,mat,r2){
   m.quaternion.setFromUnitVectors(Y,b.clone().sub(a).normalize()); g.add(m); return m;
 }
 // loft : sections {y,w,d,c} (rectangles à coins coupés), faces planes.
-// hole : {band,r,y} perce les faces gauche et droite de la bande donnée
-export function loft(secs,{hole=null,capTop=true,capBottom=true}={}){
+// hole : {band,r,y} perce les faces gauche et droite de la bande donnée. faces : ne garde que ces pans (0 droite, 2 avant, 4 gauche, 6 arrière, impairs : coins)
+export function loft(secs,{hole=null,faces=null,capTop=!faces,capBottom=!faces}={}){
   const ring = s => { const a=s.w/2,b=s.d/2,c=s.c||.001,y=s.y;
     return [[a,y,-b+c],[a,y,b-c],[a-c,y,b],[-a+c,y,b],[-a,y,b-c],[-a,y,-b+c],[-a+c,y,-b],[a-c,y,-b]]; };
   const pos=[]; const tri=(p,q,r)=>pos.push(...p,...q,...r);
   const R=secs.map(ring);
   for(let k=0;k<secs.length-1;k++) for(let i=0;i<8;i++){
+    if(faces&&!faces.includes(i)) continue;
     const j=(i+1)%8, a=R[k][i],b=R[k][j],c=R[k+1][j],d=R[k+1][i];
     if(hole && hole.band===k && (i===0||i===4)){
       const xs=a[0], s=polyShape([[a[2],a[1]],[b[2],b[1]],[c[2],c[1]],[d[2],d[1]]]);
@@ -120,6 +126,10 @@ export function dots(list,mat){ // list : [position, normale, rayon]
   const im=new THREE.InstancedMesh(new THREE.CircleGeometry(1,14),mat,list.length), m=new THREE.Matrix4(), q=new THREE.Quaternion();
   list.forEach((d,i)=>{ q.setFromUnitVectors(Z,d[1]); m.compose(d[0],q,new THREE.Vector3(d[2],d[2],1)); im.setMatrixAt(i,m); });
   return im;
+}
+// silicone clair : translucide, éclairé de l'intérieur (la lueur est ajoutée dans buildSoft)
+export function siliconeClair(){
+  return new THREE.MeshPhysicalMaterial({ color:'#e9eef0', roughness:.38, transparent:true, opacity:.5, clearcoat:.35, clearcoatRoughness:.35, sheen:.3, sheenRoughness:.4, sheenColor:new THREE.Color('#ffffff'), depthWrite:false });
 }
 // libère géométries, textures propres, ombres et instances. Les matériaux sont laissés : leurs programmes resservent à la reconstruction.
 export function disposeTree(o){ o.traverse(n=>{ n.geometry?.dispose(); if(n.isLight||n.isInstancedMesh) n.dispose?.(); for(const m of [n.material].flat()) if(m?.map&&!m.map.userData.keep&&!Object.values(M).includes(m)) m.map.dispose(); }); o.removeFromParent(); }

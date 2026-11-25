@@ -12,6 +12,7 @@ import { SILICONE, INSTR, FT, HP, PELICAN } from './data.js';
 import { STANDS } from './stands.js';
 import { buildAssembly, person } from './assembly.js';
 import { buildSpace, degagement } from './space.js';
+import { ampliW, niveau } from './interieur.js';
 import { buildScreen } from './screen.js';
 import { SYS, PA, PB, PC, PS, VINYLE, optics, diamMax, diamMin, projOf } from './optics.js';
 import { SOUTE, colOf, resume, buildTransport } from './transport.js';
@@ -22,16 +23,16 @@ const $=(q,r=document)=>r.querySelector(q), V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const fr=(v,d=0)=>v.toLocaleString('fr-CA',{minimumFractionDigits:d,maximumFractionDigits:d});
 
 export const S = {
-  tab:'espace', stand:'A', hp:'hp10', mic:'bras', open:false, silicone:'bleu', padH:980, nom:'RES',
-  mode:'un', eclate:0, xray:false, cotesI:false, figure:false,
+  tab:'espace', stand:'A', hp:'hp10', mic:'bras', open:false, silicone:'clair', led:true, padH:980, nom:'RES',
+  mode:'un', eclate:0, eclS:0, xray:false, cotesI:false, figure:false,
   sys:'dessous', projA:'ls560', projB:'lk953', projC:'lk953', projS:'lieu', gril:5000, miroir:'papier', sub:false, regieE:false, sat:false, montage:'miroir', accroche:'rail', diam:5.5, ecranH:950, plateH:100, plafond:2570, px:495, py:340, sol:'bois', rideaux:true,
   ecart:450, lum:55, vue:'ensemble', public:true, cables:true, faisceau:false, coupe:false, cotesE:false, eclE:0, cotesS:false, figS:false, faiS:true, coupeS:false,
   tCase:'a1637', tN:2, tCol:'tole', tBase:'creuse', tProj:true, tMic:false, tCab:true, tSub:false, eclT:0
 };
 const DEF={...S}, TABS=['espace','instrument','ecran','fab','transport','cotes','signal','choix'], MODES=['un','trois','tailles'], VUES=['ensemble','coin','maquette','joueur','instrument','coupe','plan','regie'], T3=['espace','instrument','ecran','transport'];
-const KEYS={tab:'t',stand:'s',mic:'m',open:'g',silicone:'c',padH:'p',nom:'n',mode:'d',sys:'e',projA:'ja',projB:'jb',projC:'jc',montage:'k',accroche:'q',diam:'o',ecranH:'h',plateH:'b',plafond:'f',px:'x',py:'y',sol:'w',rideaux:'u',ecart:'a',lum:'l',vue:'v',xray:'z',hp:'hp',projS:'js',gril:'gr',miroir:'mi',sub:'sb',regieE:'rg',sat:'st',tCase:'tc',tN:'tn',tCol:'tl',tBase:'tb',tProj:'tp',tMic:'tm',tSub:'ts',tCab:'tk'};
+const KEYS={tab:'t',stand:'s',mic:'m',open:'g',silicone:'c',padH:'p',nom:'n',mode:'d',sys:'e',projA:'ja',projB:'jb',projC:'jc',montage:'k',accroche:'q',diam:'o',ecranH:'h',plateH:'b',plafond:'f',px:'x',py:'y',sol:'w',rideaux:'u',ecart:'a',lum:'l',vue:'v',xray:'z',hp:'hp',projS:'js',gril:'gr',miroir:'mi',sub:'sb',regieE:'rg',sat:'st',tCase:'tc',tN:'tn',tCol:'tl',tBase:'tb',tProj:'tp',tMic:'tm',tSub:'ts',tCab:'tk',led:'le'};
 (function readHash(){ const q=new URLSearchParams(location.hash.slice(1)); for(const k in KEYS){ const v=q.get(KEYS[k]); if(v===null) continue; const t=typeof DEF[k]; S[k]=t==='number'?(v===''||isNaN(+v)?DEF[k]:+v):t==='boolean'?v==='1':v; }
-  const ok=(L,k,d)=>{ if(!Object.hasOwn(L,S[k])) S[k]=d; }; ok(STANDS,'stand','A'); ok(SYS,'sys','dessous'); ok(PA,'projA','ls560'); ok(PB,'projB','lk953'); ok(PC,'projC','lk953'); if(S.montage!=='droit') S.montage='miroir'; if(S.accroche!=='mat') S.accroche='rail'; ok(SILICONE,'silicone','bleu'); ok(INSTR,'nom','RES'); ok(HP,'hp','hp10'); ok(PS,'projS','lieu'); ok(PELICAN,'tCase','a1637'); if(S.regieE&&S.vue==='regie') S.vue='ensemble'; if(S.tCol!=='tissu') S.tCol='tole'; if(S.tBase!=='pleine') S.tBase='creuse';
+  const ok=(L,k,d)=>{ if(!Object.hasOwn(L,S[k])) S[k]=d; }; ok(STANDS,'stand','A'); ok(SYS,'sys','dessous'); ok(PA,'projA','ls560'); ok(PB,'projB','lk953'); ok(PC,'projC','lk953'); if(S.montage!=='droit') S.montage='miroir'; if(S.accroche!=='mat') S.accroche='rail'; ok(SILICONE,'silicone','clair'); ok(INSTR,'nom','RES'); ok(HP,'hp','hp10'); ok(PS,'projS','lieu'); ok(PELICAN,'tCase','a1637'); if(S.regieE&&S.vue==='regie') S.vue='ensemble'; if(S.tCol!=='tissu') S.tCol='tole'; if(S.tBase!=='pleine') S.tBase='creuse';
   if(!TABS.includes(S.tab)) S.tab='espace'; if(!MODES.includes(S.mode)) S.mode='un'; if(!VUES.includes(S.vue)) S.vue='ensemble'; if(S.mic!=='pied') S.mic='bras'; if(S.sol!=='blanc') S.sol='bois'; if(S.miroir!=='verre') S.miroir='papier';
   const L={ padH:[820,1120],ecranH:[500,1100],plateH:[0,1100],plafond:[2400,3600],gril:[3000,8000],px:[380,620],py:[260,480],ecart:[250,900],lum:[0,100],tN:[1,4],diam:[2,8] }; for(const k in L) S[k]=Math.min(Math.max(S[k],L[k][0]),L[k][1]); S.tN=Math.round(S.tN); if(S.plateH/1000<VINYLE) S.plateH=0; S.diamV=S.diam; })();
 addEventListener('hashchange',()=>location.reload());          // un lien collé dans l'onglet ouvert ; replaceState ne le déclenche pas
@@ -65,19 +66,20 @@ function makeComposer(w,h,pr){ const rt=new THREE.WebGLRenderTarget(w*pr,h*pr,{t
   const rt2=rt.clone(); compS=new EffectComposer(R,rt2); compS.setPixelRatio(pr); compS.setSize(w,h); compS.addPass(new RenderPass(studio,cam)); ao=new GTAOPass(studio,cam,w,h); ao.updateGtaoMaterial({radius:.09,distanceExponent:1.2,thickness:.6,scale:1.15,samples:16,screenSpaceRadius:false}); ao.updatePdMaterial({lumaPhi:10,depthPhi:2,normalPhi:3,radius:6,rings:2,samples:16}); compS.addPass(ao); compS.addPass(new OutputPass()); }
 
 // ---------------------------------------------------------------- scènes
-let asm=[], space=null, trp=null, studioExtra=new THREE.Group(), roomExtra=new THREE.Group(); studio.add(studioExtra); room.add(roomExtra);
+let asm=[], space=null, trp=null, studioExtra=new THREE.Group(), roomExtra=new THREE.Group(), eclLab=new THREE.Group(); studio.add(studioExtra,eclLab); room.add(roomExtra);
 function clear(g){ [...g.children].forEach(c=>{ c.traverse(n=>{ if(n.isCSS2DObject) n.element.remove(); }); disposeTree(c); }); }
 function label(txt,pos,cls,parent){ const e=document.createElement('div'); e.className='lb '+(cls||''); e.textContent=txt; const o=new CSS2DObject(e); o.position.copy(pos); parent.add(o); return o; }
 function dim(g,a,b,txt,col='#c4232c',tick=V(.012,0,0)){
   const m=new THREE.LineBasicMaterial({color:col,depthTest:false,transparent:true}); const pts=[a,b,a.clone().add(tick),a.clone().sub(tick),b.clone().add(tick),b.clone().sub(tick)];
   const l=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),m); l.renderOrder=9; g.add(l); label(txt,a.clone().lerp(b,.5),'q',g);
 }
-function videStudio(){ if(scr){ disposeTree(scr.g); scr=null; } if(trp){ disposeTree(trp.g); trp=null; } asm.forEach(a=>disposeTree(a.g)); asm=[]; clear(studioExtra); }
+function videStudio(){ if(scr){ disposeTree(scr.g); scr=null; } if(trp){ disposeTree(trp.g); trp=null; } asm.forEach(a=>disposeTree(a.g)); asm=[]; clear(studioExtra); clear(eclLab); }
 function buildStudio(){
   videStudio();
   const un=S.mode==='un', tl=S.mode==='tailles', L=un?[S]:tl?Object.keys(HP).map(hp=>({...S,hp})):['A','B'].map(stand=>({...S,stand})), names=Object.keys(INSTR), X=i=>(i-(L.length-1)/2)*PAS();
-  L.forEach((c,i)=>{ const a=buildAssembly({...c,nom:un?S.nom:names[i%3]}); a.g.position.x=X(i); studio.add(a.g); a.set.e=S.eclate; a.apply(); asm.push(a);
+  L.forEach((c,i)=>{ const a=buildAssembly({...c,nom:un?S.nom:names[i%3]}); a.g.position.x=X(i); studio.add(a.g); a.set.e=S.eclate; a.set.s=un?S.eclS:0; a.apply(); asm.push(a);
     if(!un) label(tl?HP[c.hp].po:c.stand+'  '+STANDS[c.stand].nom,V(X(i),.06,.5),'n',studioExtra); });
+  noms();
   if(S.figure) L.forEach((c,i)=>{ const p=person({h:1.72,pose:'joue',handY:S.padH/1000,mat:M.fig}); p.position.set(X(i),0,.5); studioExtra.add(p); });
   if(S.cotesI&&un){
     const a=asm[0], Hs=a.Hs, g=studioExtra, m=a.info.dims, w=m.F[0]/2, ph=S.padH/1000, xl=-w-.14, xr=m.W/2+.09, r=m.d/2;
@@ -86,6 +88,13 @@ function buildStudio(){
     dim(g,V(xr+.1,0,0),V(xr+.1,m.ys,0),fr(m.ys*1000)+' axe des HP'); dim(g,V(xr,m.ys-r,.02),V(xr,m.ys+r,.02),'Ø '+fr(m.H.d));
     dim(g,V(.2,Hs+.075,.0895),V(.2,Hs+.075,-.0895),'179','#c4232c',V(.012,0,0));
   }
+}
+// écartements : instrument et stand. Les noms suivent les pièces
+function ecarte(){ asm.forEach(a=>{ a.set.e=S.eclate; a.set.s=S.mode==='un'?S.eclS:0; a.apply(); }); noms(); }
+function noms(){
+  clear(eclLab); if(S.mode!=='un'||!asm[0]) return; const a=asm[0], n=(t,p)=>label(t,p,'',eclLab);
+  if(S.eclS>.3) a.stand.userData.ecl.userData.noms(S.eclS).forEach(l=>n(...l));
+  if(S.eclate>.3){ const P=a.cs.userData.parts, y=(p,z)=>a.tilt.position.y+.025+(p.position.z+z)/1000; [['Contrôles',P.controls,97],['Capot FLOU',P.cover,90],['PCB FLOU',P.flou,80],['Case',P.body,50],['Pandore',P.pandore,36],['Fond et jupe',P.bottom,19],['Bande LED',P.led,8]].forEach(([t,p,z])=>n(t,V(-.21,y(p,z),0))); n(S.silicone==='clair'?'Base molle, silicone clair':'Base molle',V(-.23,a.soft.position.y-.035,0)); }
 }
 const PAS=()=>S.mode==='tailles'?.78:1.02;
 function buildTrp(){ videStudio(); trp=buildTransport(S); studio.add(trp.g); trp.setExplode(S.eclT); trp.labels.forEach(l=>label(l[0],l[1],'n',studioExtra)); }
@@ -132,7 +141,7 @@ function viewRoom(ms=1100){
 function viewEcran(ms=1100){ const k=portrait()?1.6:1, hi=S.sys!=='dessous', so=S.sys==='sol', top=so?scr.O.s.rear+.3:2.6, f=so?Math.max(top/2.4,1):1;
   if(so) goto(S.eclE>.02?V(3.6*k*f,2*f,3.9*k*f):V(2.7*k*f,1.5*f,3.1*k*f),V(0,top*.49,0),38,ms);
   else if(S.eclE>.02) goto(hi?V(5*k,2.7*k,5.2*k):V(4.4*k,2.6*k,4.9*k),V(hi?0:.9,hi?1.4:.75,0),38,ms); else goto(hi?V(3.9*k,2.2,3.9*k):V(2.9*k,1.9,3.0*k),V(0,hi?1.05:.5,hi?-.2:0),38,ms); }
-function viewStudio(ms=1100){ const k=portrait()?1.45:1; if(S.mode!=='un'){ const t=S.mode==='tailles', q=k*(portrait()?(t?1.7:1.25):1); goto(t?V(2.5*q,1.45,3.75*q):V(1.15*q,1.4,4.1*q),V(0,.68,0),34,ms); } else if(S.figure) goto(V(2.75*k,1.5,-.35),V(.02,.83,.22),34,ms); else goto(V(1.12*k,1.6,2.12*k),V(.03,.72,0),34,ms); }
+function viewStudio(ms=1100){ const k=portrait()?1.45:1; if(S.mode!=='un'){ const t=S.mode==='tailles', q=k*(portrait()?(t?1.7:1.25):1); goto(t?V(2.5*q,1.45,3.75*q):V(1.15*q,1.4,4.1*q),V(0,.68,0),34,ms); } else if(S.eclS>.02&&asm[0]?.stand.userData.ecl){ const [a,b]=asm[0].stand.userData.ecl.userData.span, q=S.eclS, w=(b-a)*q+.45*(1-q), d=Math.max(2.15,w/(portrait()?.36:.72)), x=(a+b)/2*q; goto(V(x+d*.1,1.0,d),V(x,.56,.08),34,ms); } else if(S.figure) goto(V(2.75*k,1.5,-.35),V(.02,.83,.22),34,ms); else goto(V(1.12*k,1.6,2.12*k),V(.03,.72,0),34,ms); }
 function viewTrp(ms=1100){ const k=(portrait()?(S.tN===1?1.5:2.1):1)*(S.tN>2?1.35:S.tN===1?.8:1); goto(V(.55*k,1.75*k,2.15*k),V(0,.2,.02),36,ms); }
 const portrait=()=>stage.clientWidth<stage.clientHeight*1.05;
 
@@ -158,8 +167,8 @@ function panel(){
     if(S.mode!=='trois') grp('Stand',seg('stand',Object.fromEntries(Object.entries(STANDS).map(([k,v])=>[k,v.nom])),reI),`<p class="desc">${STANDS[S.stand].court}</p>`);
     grp('Micro',seg('mic',{bras:'Bras articulé',pied:'Pied de micro'},reI));
     grp('Haut-parleurs',S.mode==='tailles'?null:hpSeg(reI),S.mode==='tailles'?null:hpDesc(),Object.assign(seg('open',{false:'Grilles perforées',true:'Membranes visibles'},reI),{style:'margin-top:10px'}));
-    grp('Base molle',sil,'<p class="desc">Glisse sur l’instrument pour l’incliner. Il revient en place.</p>');
-    grp('Réglages',rng('padH','Hauteur des pads XY',820,1120,5,mm,reI),rng('eclate','Vue éclatée',0,1,.01,v=>fr(v*100)+' %',()=>{ asm.forEach(a=>{a.set.e=S.eclate;a.apply();}); }));
+    grp('Base molle et lumière',sil,Object.assign(tog([['led','La bande LED allumée',reI]]),{style:'margin-top:10px'}),`<p class="desc">${S.silicone==='clair'?'Silicone translucide : la bande LED du Pandore luit à travers.':'Silicone teinté : la lumière passe à peine.'} Glisse sur l’instrument pour l’incliner.</p>`);
+    grp('Réglages',rng('padH','Hauteur des pads XY',820,1120,5,mm,reI),rng('eclate','Vue éclatée, instrument',0,1,.01,v=>fr(v*100)+' %',ecarte),S.mode==='un'?rng('eclS','Vue éclatée, stand et haut-parleurs',0,1,.01,v=>fr(v*100)+' %',()=>{ const v0=asm[0]?.set.s>.02; ecarte(); if((S.eclS>.02)!==v0) viewStudio(); }):null);
     grp('Montrer',tog([['xray','L’intérieur du stand',reI],['cotesI','Les cotes',()=>{ if(S.cotesI&&S.mode!=='un'){ S.mode='un'; reI(); viewStudio(); } else reI(); panel(); }],['figure','Une personne (1,72 m)',()=>{ reI(); viewStudio(); }]]));
     if(S.mode==='un') grp('Écran affiché',seg('nom',Object.fromEntries(Object.keys(INSTR).map(k=>[k,k])),reI));
     const d=grp(S.mode==='un'?'Chiffres':'Exporter','<dl class="kv" id="ro"></dl>'); const b=el('<button class="btn" type="button">Télécharger le modèle (GLB)</button>'); b.onclick=()=>exportGLB(); d.append(b);
@@ -176,7 +185,7 @@ function panel(){
     sysPanel(reE,()=>viewRoom()); techPanel(reE);
     const sol=S.sys==='sol'; grp(sol?'Le lieu':'EISODE',sol?'<p class="desc">Lieu générique : salle blanche de 10 × 10 m avec un gril.</p>':rng('px','Position du disque, est-ouest',...(S.sys==='mat'&&S.accroche==='rail'?[445,625]:[380,620]),5,v=>`${fr(v/100,2)} m`,reE),sol?null:S.sys==='mat'&&S.accroche==='rail'?'<p class="desc">Nord-sud : fixée par le rail 2 du plafond.</p>':rng('py','Position du disque, nord-sud',260,480,5,v=>`${fr(v/100,2)} m`,reE),rng('lum','Lumière de la salle',0,100,5,v=>v+' %',()=>{ applyRoom(); writeHash(); }),
       sol?null:Object.assign(tog([['rideaux','Fenêtres occultées',()=>{ applyRoom(); writeHash(); }]]),{style:'margin-top:12px'}),Object.assign(seg('sol',sol?{bois:'Plancher gris',blanc:'Plancher blanc'}:{bois:'Plancher de bois',blanc:'Plancher blanc'},reE),{style:'margin-top:12px'}),rng('ecart','Écart écran, instrument',250,900,50,mm,reE));
-    grp('Instruments',hpSeg(reE),hpDesc(),Object.assign(seg('stand',Object.fromEntries(Object.entries(STANDS).map(([k,v])=>[k,v.nom])),reE),{style:'margin-top:10px'}),Object.assign(seg('mic',{bras:'Bras articulé',pied:'Pied de micro'},reE),{style:'margin-top:8px'}),Object.assign(seg('open',{false:'Grilles',true:'Membranes'},reE),{style:'margin-top:8px'}),'<div style="height:10px"></div>',sil);
+    grp('Instruments',hpSeg(reE),hpDesc(),Object.assign(seg('stand',Object.fromEntries(Object.entries(STANDS).map(([k,v])=>[k,v.nom])),reE),{style:'margin-top:10px'}),Object.assign(seg('mic',{bras:'Bras articulé',pied:'Pied de micro'},reE),{style:'margin-top:8px'}),Object.assign(seg('open',{false:'Grilles',true:'Membranes'},reE),{style:'margin-top:8px'}),'<div style="height:10px"></div>',sil,Object.assign(tog([['led','Les bandes LED',reE]]),{style:'margin-top:10px'}));
     grp('Montrer',tog([['public','Le public',applyRoom],['cables','Les câbles',applyRoom],['faisceau','Le faisceau',applyRoom],['cotesE','Les cotes',applyRoom]]));
     grp('Optique',`<dl class="kv" id="ro"></dl>`);
   }
@@ -212,11 +221,11 @@ const hpSeg2=()=>Object.assign(hpSeg(reT),{style:'margin-top:10px'});
 function readout(){
   const d=$('#ro'); if(!d) return; const row=(a,b,w)=>`<dt>${a}</dt><dd class="${w?'warn':''}">${b}</dd>`;
   if(S.tab==='transport'){ const p=trp?.p; if(!p) return; const ko=[...p.left,...p.hors];
-    d.innerHTML=p.cases.map((c,k)=>row(`Case ${k+1}`,`${fr(c.kg,1)} kg, ${fr(c.fill*100)} % pleine`,c.kg>SOUTE.max)).join('')+row('Somme des côtés',`${fr(p.somme,1)} cm (max. ${SOUTE.somme})`,p.somme>SOUTE.somme+.05)+row('Poids permis',`${SOUTE.kg} kg (${SOUTE.max} avec frais)`)+row('Contenu',`${fr(p.total,1)} kg`)+row('Verdict',ko.length?`${ko.length} objet${ko.length>1?'s':''} dehors`:p.cases.some(c=>c.kg>SOUTE.max)?'trop lourd':p.somme>SOUTE.somme+.05?'entre, case hors format':p.cases.some(c=>c.kg>SOUTE.kg)?'entre, avec supplément':'entre',ko.length||p.somme>SOUTE.somme+.05||p.cases.some(c=>c.kg>SOUTE.max));
+    d.innerHTML=p.cases.map((c,k)=>row(`Case ${k+1}`,`${fr(c.kg,1)} kg, ${fr(c.fill*100)} % pleine`,c.kg>SOUTE.max+SOUTE.tol)).join('')+row('Somme des côtés',`${fr(p.somme,1)} cm (max. ${SOUTE.somme})`,p.somme>SOUTE.somme+.05)+row('Poids permis',`${SOUTE.kg} kg (${SOUTE.max} avec frais)`)+row('Contenu',`${fr(p.total,1)} kg`)+row('Verdict',ko.length?`${ko.length} objet${ko.length>1?'s':''} dehors`:p.cases.some(c=>c.kg>SOUTE.max+SOUTE.tol)?'trop lourd':p.cases.some(c=>c.kg>SOUTE.max-.5)?'à la limite, à peser':p.somme>SOUTE.somme+.05?'entre, case hors format':p.cases.some(c=>c.kg>SOUTE.kg)?'entre, avec supplément':'entre',ko.length||p.somme>SOUTE.somme+.05||p.cases.some(c=>c.kg>SOUTE.max+SOUTE.tol));
     const li=(t,L,w)=>L.length?`<h4 class="${w?'warn':''}">${t}</h4><ul class="it">${L.map(i=>`<li><i style="background:${colOf(i.g)}"></i>${i.n>1?i.n+' × ':''}${i.nom}<b>${fr(i.tot,1)} kg</b>${i.note?`<small>${i.note}</small>`:''}</li>`).join('')}</ul>`:'';
     $('#tl').innerHTML=li('N’entre dans aucune case',resume(p.hors),1)+li('Plus de place',resume(p.left),1)+li('Dans les cases',resume(p.ok.filter(i=>!p.left.includes(i))))+(p.cab.length?`<h4>En cabine</h4><ul class="it">${p.cab.map(t=>`<li>${t}</li>`).join('')}</ul>`:'')+(p.sur.length?`<h4>Sur place</h4><ul class="it">${p.sur.map(t=>`<li>${t}</li>`).join('')}</ul>`:''); return; }
   if(S.tab==='instrument'){ if(S.mode!=='un'){ d.innerHTML=''; return; } const i=asm[0]?.info; if(!i) return;
-    d.innerHTML=row('Hauteur du stand',mm(i.Hs*1000))+row('Emprise au sol',`${i.encombrement[0]} × ${i.encombrement[1]} mm`)+row('Corps, largeur × prof.',`${i.corps[0]} × ${i.corps[1]} mm`)+row('Haut-parleurs',`2 × ${HP[S.hp].po}, dès ${HP[S.hp].hz} Hz`)+row('Volume par haut-parleur',`≈ ${fr(i.vol/2,1)} L`)+row('Masse totale',`≈ ${fr(i.kg)} kg`)+row('Force qui fait basculer',`≈ ${fr(i.bascule,-0)} N`,i.bascule<110);
+    d.innerHTML=row('Hauteur du stand',mm(i.Hs*1000))+row('Emprise au sol',`${i.encombrement[0]} × ${i.encombrement[1]} mm`)+row('Corps, largeur × prof.',`${i.corps[0]} × ${i.corps[1]} mm`)+row('Haut-parleurs',`2 × ${HP[S.hp].po}, dès ${HP[S.hp].hz} Hz`)+row('Niveau avec le BT20A',`≈ ${fr(niveau(S.hp))} dB à 1 m`)+row('Volume par haut-parleur',`≈ ${fr(i.vol/2,1)} L`)+row('Masse totale',`≈ ${fr(i.kg)} kg`)+row('Force qui fait basculer',`≈ ${fr(i.bascule,-0)} N`,i.bascule<110);
   } else { const o=optics(S);
     const lx=v=>`≈ ${fr(Math.round(v/10)*10)} lx`, P=o.P; let h='';
     if(S.sys==='dessous'){ const f=o.f; h=f?row('Image la plus grande',`${fr(diamMax(S),2)} pi`)+row('Anneau, extérieur',`Ø ${fr((o.Rt+.02)*2,2)} m`)+row('Au sol',`Ø ${fr(o.Rf*2,2)} m`)+row('Jeu dans la jupe',`${fr(o.jeu*1000)} mm`,o.jeu<.008)+row('Trajet optique',`${fr(f.T*100)} cm`)+row('Miroir',O2(o))+row('Angle du miroir',`${fr(Math.abs(f.ph),1)}°`)+row('Inclinaison du projecteur',`${fr(Math.abs(f.tilt))}°`,Math.abs(f.tilt)>15):''; }
@@ -240,7 +249,7 @@ async function exportGLB(src,nom){
 
 // ---------------------------------------------------------------- inclinaison (base molle)
 const ray=new THREE.Raycaster(), ptr=new THREE.Vector2(); let drag=null;
-function hit(e){ if(S.tab!=='instrument'||S.eclate>.05) return null; const b=cv.getBoundingClientRect(); ptr.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1); ray.setFromCamera(ptr,cam);
+function hit(e){ if(S.tab!=='instrument'||S.eclate>.05||S.eclS>.05) return null; const b=cv.getBoundingClientRect(); ptr.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1); ray.setFromCamera(ptr,cam);
   for(const a of asm){ const h=ray.intersectObject(a.g,true).find(x=>x.object.visible&&!x.object.isLine); if(h){ let n=h.object; while(n){ if(n===a.tilt) return a; n=n.parent; } } } return null; }
 cv.addEventListener('pointerdown',e=>{ const a=hit(e); if(a){ drag={a,x:e.clientX,y:e.clientY}; ctl.enabled=false; cv.setPointerCapture(e.pointerId); e.stopImmediatePropagation(); } },true);
 cv.addEventListener('pointermove',e=>{ if(drag){ const dx=(e.clientX-drag.x)/260, dy=(e.clientY-drag.y)/260, f=V(0,0,-1).applyQuaternion(cam.quaternion).setY(0).normalize(), rt=V(-f.z,0,f.x); const wx=rt.x*dx-f.x*dy, wz=rt.z*dx-f.z*dy; drag.a.trg=[THREE.MathUtils.clamp(wz,-.15,.15),THREE.MathUtils.clamp(-wx,-.15,.15)]; } else if(e.buttons===0) stage.classList.toggle('tilt',!!hit(e)); });
@@ -261,12 +270,12 @@ function step(now){
   if(S.tab==='ecran'){ if(scr){ scr.mat.uniforms.uT.value=t; ao.enabled=!scr.beams.visible; } compS.render(dt); L2.render(studio,cam); }
   else if(S.tab==='transport'){ ao.enabled=true; compS.render(dt); L2.render(studio,cam); }
   else if(S.tab==='instrument'){ ao.enabled=true;
-    asm.forEach(a=>{ const s=a.set, g=a.trg||[0,0]; a.vx=(a.vx||0)+((g[0]-s.rx)*(a.trg?220:150)-(a.vx||0)*(a.trg?24:7))*dt; a.vz=(a.vz||0)+((g[1]-s.rz)*(a.trg?220:150)-(a.vz||0)*(a.trg?24:7))*dt; s.rx+=a.vx*dt; s.rz+=a.vz*dt; a.apply(); a.oled.draw(a.nom,t,[-s.rz,s.rx]); });
+    asm.forEach(a=>{ const s=a.set, g=a.trg||[0,0]; a.vx=(a.vx||0)+((g[0]-s.rx)*(a.trg?220:150)-(a.vx||0)*(a.trg?24:7))*dt; a.vz=(a.vz||0)+((g[1]-s.rz)*(a.trg?220:150)-(a.vz||0)*(a.trg?24:7))*dt; s.rx+=a.vx*dt; s.rz+=a.vz*dt; a.apply(); a.lueur(S.led?.72+.2*Math.sin(t*1.1)+Math.min(Math.hypot(a.vx,a.vz)*.35,.5):0); a.oled.draw(a.nom,t,[-s.rz,s.rx]); });
     compS.render(dt); L2.render(studio,cam);
   } else if(space){
     const u=space.screenMat.uniforms; u.uT.value=t;
     space.inst.forEach((a,i)=>{ // les joueurs bougent doucement leur instrument
-      const q=S.public?1:0; a.set.rx=q*.035*Math.sin(t*(.7+i*.13)+i*2); a.set.rz=q*.045*Math.sin(t*(.5+i*.17)+i*4); a.apply(); a.oled.draw(a.nom,t,[-a.set.rz,a.set.rx]); u.uE.value.setComponent(i,.35+.4*Math.abs(Math.sin(t*(.5+i*.17)+i*4))); space.glow[i].intensity=2.3*(space.lumGlow??1)*(.85+.25*Math.sin(t*(.6+i*.3)+i)); });
+      const q=S.public?1:0; a.set.rx=q*.035*Math.sin(t*(.7+i*.13)+i*2); a.set.rz=q*.045*Math.sin(t*(.5+i*.17)+i*4); a.apply(); a.oled.draw(a.nom,t,[-a.set.rz,a.set.rx]); const v=.35+.4*Math.abs(Math.sin(t*(.5+i*.17)+i*4)); u.uE.value.setComponent(i,v); a.lueur(S.led?.3+v*.9:0); space.glow[i].intensity=2.3*(space.lumGlow??1)*(.85+.25*Math.sin(t*(.6+i*.3)+i)); });
     bloom.strength=.2*(1-S.lum/100); aoR.enabled=!space.sc.beams.visible&&S.vue!=='coupe'; space.ei.plaf.visible=cam.position.y<space.info.RH; space.ei.vue(cam.position);
     comp.render(dt); L2.render(room,cam);
   }

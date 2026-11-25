@@ -1,7 +1,7 @@
 // Le case (Pandore + PCB FLOU) et la base molle, d'après les fichiers de François Auclair.
 import * as THREE from 'three';
-import { M, mesh, cbox, ccyl, extrudeX, polyShape, rrect, circ, silicone } from './util.js';
-import { CASE as C, HOLES, PCB, BACK, RIGHT, BASE_H } from './data.js';
+import { M, mesh, cbox, ccyl, extrudeX, polyShape, rrect, circ, silicone, siliconeClair, tube } from './util.js';
+import { CASE as C, HOLES, PCB, BACK, RIGHT, BASE_H, LED } from './data.js';
 
 const MM = .001;
 // groupe en mm, z vers le haut, centré sur le case -> mètres, y vers le haut
@@ -38,7 +38,7 @@ export function oledCanvas(){
 
 export function buildCase(oled){
   const { g, in: r } = cad();
-  const parts = { cover:new THREE.Group(), controls:new THREE.Group(), flou:new THREE.Group(), body:new THREE.Group(), pandore:new THREE.Group(), bottom:new THREE.Group() };
+  const parts = { cover:new THREE.Group(), controls:new THREE.Group(), flou:new THREE.Group(), body:new THREE.Group(), pandore:new THREE.Group(), bottom:new THREE.Group(), led:new THREE.Group() };
   Object.values(parts).forEach(p=>r.add(p));
   const b=parts.body;
   // --- dessous + jupe
@@ -49,6 +49,12 @@ export function buildCase(oled){
   bt.add(mesh(new THREE.ExtrudeGeometry(sk,{depth:C.zBottom,bevelEnabled:false}),M.white));
   const pk=ccyl(bt,C.puck.d/2,C.puck.z1-C.puck.z0,[C.puck.x,C.puck.y,(C.puck.z0+C.puck.z1)/2],M.dark);
   [[30,30.9],[236.4,30.9],[30,149.8],[236.4,149.8]].forEach(p=>ccyl(bt,7,4,[p[0],p[1],1.6],M.magnet));
+  // --- bande LED collée sur la tranche de la jupe, fil vers J26
+  const ld=parts.led, zl=LED.z, hl=LED.h/2, eb=1.2; [[a0-eb,a1-eb,a2+eb,a1],[a0-eb,a3,a2+eb,a3+eb],[a0-eb,a1,a0,a3],[a2,a1,a2+eb,a3]].forEach(([x0,y0,x1,y1])=>cbox(ld,[x0,y0,zl-hl],[x1,y1,zl+hl],M.btn));
+  const bl=new THREE.MeshBasicMaterial({color:'#ffffff',toneMapped:false}), Lp=[], w=a2-a0, h=a3-a1, per=2*(w+h), nl=Math.floor(per/LED.pas); for(let i=0;i<nl;i++){ let t=(i+.5)*per/nl; if(t<w) Lp.push([a0+t,a1-eb-.8,0]); else if((t-=w)<h) Lp.push([a2+eb+.8,a1+t,1]); else if((t-=h)<w) Lp.push([a2-t,a3+eb+.8,0]); else Lp.push([a0-eb-.8,a3-(t-w),1]); }
+  const li=new THREE.InstancedMesh(new THREE.BoxGeometry(5,5,1.6),bl,nl), lm=new THREE.Matrix4(); Lp.forEach(([x,y,r],i)=>{ lm.makeRotationFromEuler(r?new THREE.Euler(0,Math.PI/2,0):new THREE.Euler(Math.PI/2,0,0)); lm.setPosition(x,y,zl); li.setMatrixAt(i,lm); }); ld.add(li); parts.ledMat=bl; parts.ledN=nl;
+  const jx=PCB.x+LED.j26[0], jy=PCB.y+LED.j26[1]; [['#c4232c',-1.6],['#2f8f4e',0],['#17181b',1.6]].forEach(([c,q])=>{ const t=tube(ld,[[jx+q,jy,PCB.zTop+4],[jx+q+1,jy-3,28],[a2+6+q,jy-6,21],[a2+5+q,jy-7,14],[a2+eb+.6,jy-8+q,zl]],.55,new THREE.MeshStandardMaterial({color:c,roughness:.6}),30); t.castShadow=false; });
+  cbox(parts.pandore,[jx-4,jy-1.5,PCB.zTop],[jx+4,jy+1.5,PCB.zTop+7],M.black,.2);
   // --- parois : avant, arrière (tôle), gauche perforée, dessus du deck
   cbox(b,[0,C.y0,C.zPlate],[C.w,C.y0+6.4,C.zDeck-3.5],M.white,.8);
   const ws=polyShape([[C.y0,C.zPlate],[C.y1,C.zPlate],[C.y1,C.zDeck-3.5],[C.y0,C.zDeck-3.5]]);
@@ -130,12 +136,18 @@ export function buildCase(oled){
 }
 
 // base molle : même contour que le case, gorge de 20 mm pour la jupe, îlot central
-export function buildSoft(color){
+export function buildSoft(color,clair=false){
   const { g, in: r } = cad(); g.name='soft';
-  const mat=silicone(color), top=C.zBottom, bot=top-BASE_H, gap=1.6, zc=-1.5;
-  const uni={ uTilt:{value:new THREE.Vector2()} };
-  mat.onBeforeCompile=s=>{ s.uniforms.uTilt=uni.uTilt;
-    s.vertexShader='uniform vec2 uTilt;\n'+s.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
+  const mat=clair?siliconeClair():silicone(color), top=C.zBottom, bot=top-BASE_H, gap=1.6, gx=LED.jeu, zc=-1.5;
+  const uni={ uTilt:{value:new THREE.Vector2()}, uLed:{value:0}, uCol:{value:new THREE.Color('#4f7dff')} }, k=C.skirtOuter, kx=(k[0]+k[2])/2, ky=(k[1]+k[3])/2, hx=(k[2]-k[0])/2, hy=(k[3]-k[1])/2, f=v=>v.toFixed(2);
+  mat.onBeforeCompile=s=>{ Object.assign(s.uniforms,uni);
+    // lueur : distance à la bande LED (un rectangle à la hauteur z de la bande), avec les points lumineux qui se fondent en s'éloignant
+    s.fragmentShader='uniform float uLed; uniform vec3 uCol; varying vec3 vLp;\n'+s.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+      { vec2 q=abs(vLp.xy-vec2(${f(kx)},${f(ky)}))-vec2(${f(hx)},${f(hy)}); float sd=length(max(q,0.))+min(max(q.x,q.y),0.), dz=vLp.z-${f(LED.z)}, d=length(vec2(sd,dz));
+        float a=q.x>q.y?vLp.y:vLp.x, pt=.5+.5*cos(a*${f(Math.PI*2/LED.pas)}); float g=1.3*exp(-d*.055)+.5*exp(-d*.016)+.5*pt*exp(-d*.1);
+        totalEmissiveRadiance+=uCol*g*uLed*${clair?'.75':'1.'}; ${clair?'diffuseColor.rgb=mix(diffuseColor.rgb,uCol,clamp(g*uLed*.75,0.,.88)); diffuseColor.a=clamp(diffuseColor.a+.38*g*uLed,0.,.95);':''} }`);
+    s.vertexShader='uniform vec2 uTilt; varying vec3 vLp;\n'+s.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
+      vLp=position;
       { float h=clamp((position.z-(${bot.toFixed(1)}))/${BASE_H.toFixed(1)},0.,1.); h=h*h*(3.-2.*h);
         vec2 q=position.xy-vec2(${C.cx.toFixed(1)},${C.cy.toFixed(1)});
         transformed.z += h*(-q.x*uTilt.x - q.y*uTilt.y)*.92; transformed.x += h*uTilt.x*${(BASE_H*.45).toFixed(1)}; transformed.y += h*uTilt.y*${(BASE_H*.45).toFixed(1)}; }`); };
@@ -143,11 +155,12 @@ export function buildSoft(color){
   const [a0,a1,a2,a3]=C.skirtOuter,[i0,i1,i2,i3]=C.skirtInner;
   const lo=mesh(new THREE.ExtrudeGeometry(out(),{depth:zc-bot-1.2,steps:14,bevelEnabled:true,bevelThickness:1.2,bevelSize:1.2,bevelOffset:-1.2,bevelSegments:2,curveSegments:10}),mat); lo.position.z=bot+1.2;
   lo.geometry.translate(0,0,bot+1.2); lo.position.z=0; r.add(lo);
-  const ring=out(); ring.holes.push(rrect(a0-gap,a1-gap,a2+gap,a3+gap,3,THREE.Path));
+  const ring=out(); ring.holes.push(rrect(a0-gx,a1-gx,a2+gx,a3+gx,3,THREE.Path));
   const rg=new THREE.ExtrudeGeometry(ring,{depth:top-zc-1.2,steps:4,bevelEnabled:true,bevelThickness:1.2,bevelSize:1.2,bevelOffset:-1.2,bevelSegments:2,curveSegments:10}); rg.translate(0,0,zc); r.add(mesh(rg,mat));
   const isl=rrect(i0+gap,i1+gap,i2-gap,i3-gap,3); isl.holes.push(circ(C.puck.x,C.puck.y,C.puck.d/2+2));
   const ig=new THREE.ExtrudeGeometry(isl,{depth:top-zc-1.4,steps:4,bevelEnabled:true,bevelThickness:1,bevelSize:1,bevelOffset:-1,bevelSegments:2,curveSegments:16}); ig.translate(0,0,zc); r.add(mesh(ig,mat));
   const mg=new THREE.Group(); r.add(mg);
   [[30,30.9],[236.4,30.9],[30,149.8],[236.4,149.8]].forEach(p=>ccyl(mg,7,4,[p[0],p[1],zc+1.4],M.magnet));
+  if(clair) g.traverse(n=>{ if(n.material===mat){ n.castShadow=false; n.renderOrder=2; } });
   g.userData.uni=uni; return g;
 }

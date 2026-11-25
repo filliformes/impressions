@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { M, mesh, cbox, ccyl, loft, dots, rod, tube, silicone } from './util.js';
 import { HP } from './data.js';
+import { trappe, placeAmpli, buildInterieur, buildEclate } from './interieur.js';
 
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 export const STANDS = {
@@ -26,22 +27,15 @@ export function driver(hp){
 }
 function pair(x,y,hp){ const g=new THREE.Group(); const r=driver(hp); r.position.set(x,y,0); const l=driver(hp); l.rotation.y=Math.PI; l.position.set(-x,y,0); g.add(r,l); return g; }
 // trame de points, même principe que la paroi gauche du case : pas de 7 mm, diamètres modulés
-function halftone(x,y,hz,y0,y1,rc,pitch=.0085){
+function halftone(x,y,hz,y0,y1,rc,s,pitch=.0085){
   const L=[], k=rc/.116;
-  for(const s of [1,-1]) for(let yy=y0;yy<=y1;yy+=pitch) for(let z=-hz;z<=hz+1e-6;z+=pitch){
+  for(let yy=y0;yy<=y1;yy+=pitch) for(let z=-hz;z<=hz+1e-6;z+=pitch){
     const r=Math.hypot(yy-y,z), w=.5+.5*Math.cos(z*38+(yy-y)*9);
     let d = r<rc ? .0034-.0009*(r/rc)*(r/rc)*(.4+.6*w) : .0024*Math.exp(-Math.pow((r-rc)/(.07*k),1.2))*(.45+.55*w);
     if(d>.00042) L.push([V(s*(x+.0004),yy,z),V(s,0,0),d]);
   }
   return dots(L,M.hole);
 }
-function amp(g,x,y,z){
-  cbox(g,[x-.1,y-.06,z-.02],[x+.1,y+.06,z],M.black,.003);
-  ccyl(g,.011,.006,[x-.07,y+.02,z-.022],M.steel,'z'); ccyl(g,.011,.006,[x-.035,y+.02,z-.022],M.steel,'z');
-  cbox(g,[x+.02,y+.005,z-.024],[x+.05,y+.035,z-.019],M.pcb,.001); cbox(g,[x+.062,y+.008,z-.023],[x+.085,y+.032,z-.019],M.red,.001);
-  for(let i=0;i<9;i++) cbox(g,[x-.088+i*.02,y-.045,z-.0215],[x-.08+i*.02,y-.015,z-.0195],M.hole);
-}
-
 // cotes d'un stand selon le haut-parleur (m). sec : profil de bas en haut {y,w,d,c}
 const SEAT_W=.2704, SEAT_D=.1829;
 export function standDims(kind,Hs,hp){
@@ -68,24 +62,23 @@ export function buildStand(kind,Hs,{open=false,xray=false,hp='hp10'}={}){
   const g=new THREE.Group(), shell=new THREE.Group(), inside=new THREE.Group(), m=standDims(kind,Hs,hp), { W,D,ys,sh,yh,k }=m; g.add(shell,inside);
   const skin = xray ? M.white.clone() : M.white;
   if(xray){ skin.transparent=true; skin.opacity=.16; skin.depthWrite=false; skin.side=THREE.DoubleSide; }
-  const add=q=>{ if(xray) q.castShadow=false; shell.add(q); return q; }, rc=m.H.cut/2000;
-  add(mesh(loft(m.sec,{hole:open?{band:1,r:m.d/2+.001,y:ys}:null}),skin));
-  inside.add(pair(W/2-(open?.0085:.011)*m.H.depth/129,ys,hp));
+  const add=q=>{ if(xray) q.castShadow=false; shell.add(q); return q; }, rc=m.H.cut/2000, trame=()=>[1,-1].map(s=>kind==='A'?halftone(W/2,ys,D/2-.014,Math.max(yh-.14*k,.06),sh-.006,rc,s):halftone(W/2,ys,D/2-m.c-.004,ys-m.hb+.006,ys+m.hb-.006,rc,s));
+  const body=[]; body.push(add(mesh(loft(m.sec,{hole:open?{band:1,r:m.d/2+.001,y:ys}:null}),skin)));
+  if(xray) inside.add(buildInterieur(m).g); else inside.add(pair(W/2-(open?.0085:.011)*m.H.depth/129,ys,hp));
+  { const pa=placeAmpli(m), t=trappe(); t.position.set(0,pa.y,pa.z); t.rotation.x=pa.rx; shell.add(t); body.push(t); }
   if(kind==='A'){
     cbox(shell,[-W*.38,.008,-D*.36],[W*.38,.03,D*.36],M.black); const F=m.F[0]; shell.add(mesh(loft([{y:0,w:F,d:F,c:.012},{y:.007,w:F,d:F,c:.012},{y:.008,w:F-.002,d:F-.002,c:.012}]),M.white));
-    if(!xray){ if(!open) shell.add(halftone(W/2,ys,D/2-.014,Math.max(yh-.14*k,.06),sh-.006,rc));
-      shell.add(mesh(loft([{y:yh-.002,w:W+.0008,d:D+.0008,c:.012},{y:yh,w:W+.0008,d:D+.0008,c:.012}]),M.hole,false)); }
-    if(xray){ cbox(inside,[-W/2+.02,yh,-D/2+.02],[W/2-.02,yh+.004,D/2-.02],M.black); cbox(inside,[-.003,yh,-D/2+.02],[.003,sh-.01,D/2-.02],M.black); cbox(inside,[-W*.4,.06,-D*.38],[W*.4,.16,D*.38],M.dark,.006); }
-    amp(shell,0,Math.max(Math.min(yh-.12,.34),.16),-D/2-.0005);
+    if(!xray){ if(!open) { const h=trame(); shell.add(...h); body.push(...h); }
+      const j=mesh(loft([{y:yh-.002,w:W+.0008,d:D+.0008,c:.012},{y:yh,w:W+.0008,d:D+.0008,c:.012}]),M.hole,false); shell.add(j); body.push(j); }
   } else {
     const [fw,fd]=m.F, c=m.cut; shell.add(mesh(loft([{y:0,w:fw,d:fd,c},{y:.009,w:fw,d:fd,c},{y:.0105,w:fw-.003,d:fd-.003,c}]),M.white));
-    if(!xray&&!open) shell.add(halftone(W/2,ys,D/2-m.c-.004,ys-m.hb+.006,ys+m.hb-.006,rc));
-    if(xray){ cbox(inside,[-.003,ys-m.hb,-D/2+.04],[.003,ys+m.hb,D/2-.04],M.black); cbox(inside,[-.07,.02,-.05],[.07,.12,.05],M.dark,.006); }
-    amp(shell,0,ys,-D/2-.0005);
+    if(!xray&&!open) { const h=trame(); shell.add(...h); body.push(...h); }
   }
   { const r=.0015, y0=Hs-.0005, y1=Hs+.004; cbox(shell,[-.1352,y0,-.0915],[.1352,y1,-.0915+r],M.white); cbox(shell,[-.1352,y0,.0915-r],[.1352,y1,.0915],M.white); cbox(shell,[-.1352,y0,-.0915],[-.1352+r,y1,.0915],M.white); cbox(shell,[.1352-r,y0,-.0915],[.1352,y1,.0915],M.white); }
+  // vue éclatée du stand, construite à la demande
+  const eclate=e=>{ if(e>.01&&!g.userData.ecl){ const q=g.userData.ecl=buildEclate(m,{halftone:trame}); g.add(q); } const q=g.userData.ecl; if(q){ q.visible=e>.01; q.userData.setE(e); inside.visible=e<=.01; body.forEach(b=>b.visible=e<=.01); } };
   const info={ kind,dims:m,encombrement:m.F.map(v=>Math.round(v*1000)),corps:[Math.round(W*1000),Math.round(D*1000)],vol:m.vol,kg:m.kg,appui:m.appui,plaque:m.plaque,hp:ys };
-  return { group:g, info };
+  return { group:g, info, eclate };
 }
 
 // SM58 : 162 x 51 mm. Capsule vers +y, origine au milieu du manche

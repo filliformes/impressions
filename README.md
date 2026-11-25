@@ -12,15 +12,17 @@ Chaque instrument tourne sur [Pandore](https://github.com/filliformes/pandore) e
 
 1. le **PCB FLOU** et ses contrôles (6 potentiomètres, 2 pads XY, 3 boutons, 1 slider, écran et encodeur)
 2. le **case** en métal blanc, qui contient Pandore et FLOU ; son côté droit est plein et rigide
-3. la **base molle** en silicone aimanté : l'instrument bouge et revient en place, ce qui permet de jouer de l'IMU sans le sortir de son stand
-4. le **stand** (Monolithe ou Losange), avec deux haut-parleurs dos à dos (gauche et droite) et leur ampli
+3. la **base molle** en silicone translucide aimanté, éclairée par une bande LED que pilote Pandore : l'instrument bouge et revient en place, ce qui permet de jouer de l'IMU sans le sortir de son stand
+4. le **stand** (Monolithe ou Losange), avec deux haut-parleurs coaxiaux dos à dos (gauche et droite), leurs filtres et un petit ampli en classe D
 5. un **micro** dynamique, sur pied ou sur bras articulé
 
 Les haut-parleurs se choisissent entre 10, 8, 6,5 et 5 po. Tout le stand suit.
 
 ![Les quatre tailles de haut-parleurs](img/tailles.jpg)
 
-![Vue éclatée](img/eclate.jpg)
+![Vue éclatée de l'instrument](img/eclate.jpg)
+
+![Vue éclatée du stand : haut-parleurs, caisson, ampli](img/interieur.jpg)
 
 ## L'écran
 
@@ -54,7 +56,7 @@ La galerie est modélisée d'après son plan coté : 8,06 × 9,27 m, plafond à 
 ## La maquette
 
 - **Espace** : la galerie ou un lieu avec gril, les instruments, le public et la régie. Vues d'ensemble, du joueur, en coupe, en maquette et de dessus.
-- **Instrument** : les stands, les tailles de haut-parleurs, les porte-micros, vue éclatée, intérieur, cotes, export GLB (Rhino 8, Blender). On peut glisser l'instrument pour l'incliner sur sa base molle.
+- **Instrument** : les stands, les tailles de haut-parleurs, les porte-micros, vues éclatées de l'instrument, du stand et des haut-parleurs, intérieur, cotes, export GLB (Rhino 8, Blender). On peut glisser l'instrument pour l'incliner sur sa base molle.
 - **Écran** : le système choisi seul, avec vue éclatée, coupe, cotes et export GLB.
 - **Fabrication** : liste des pièces, montage, tolérances, coupe cotée et fichiers DXF et CSV, calculés à partir des réglages.
 - **Transport** : ce qui entre dans combien de cases, et à quel poids.

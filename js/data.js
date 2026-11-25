@@ -35,19 +35,22 @@ export const BACK = [
   ['USB2',212.5,'r',14.5,15.45,8.2,2],['USB3',230.4,'r',14.5,15.62,8.53,2],['DC',245.8,'r',10,9,4.53,1]
 ];
 export const RIGHT = [['DIO',21.81,20.4,8.1,4.03],['AIO',44.69,20.4,8.1,4.03],['GROVE B',63.75,10,4.7,2.33],['GROVE A',77,10,4.7,2.33],['VIN',88.2,8.4,8.5,5]];
+// Bande LED autour de la jupe, sortie J26 « RGBA » du Pandore (position relevée dans le KiCad)
+export const LED = { j26:[241.2,12.1], pas:1000/60, z:8, h:10, jeu:3.6, mA:50 };
+export const LED_N = Math.floor(2*((246.4-20)+(159.8-20.9))/(1000/60));
 export const BASE_H = 80;        // hauteur de la base molle, estimée sur les rendus de François
-// Haut-parleurs coaxiaux de référence (fiches B&C). d : diamètre, cut : perçage, depth : profondeur (mm), hz : bas de la bande annoncée, db : sensibilité
+// Haut-parleurs coaxiaux de référence (fiches B&C). w : puissance nominale du grave (W), fc : coupure conseillée (kHz), d : diamètre, cut : perçage, depth : profondeur (mm), hz : bas de la bande annoncée, db : sensibilité
 export const HP = {
-  hp10:{ po:'10 po', nom:'B&C 10CXN64', d:261, cut:233, depth:129, kg:3.95, hz:70, db:97, src:'https://loudspeakerdatabase.com/BC/10CXN64' },
-  hp8:{ po:'8 po', nom:'B&C 8CXN51', d:225, cut:187, depth:111, kg:2.6, hz:70, db:97, src:'https://www.bcspeakers.com/en/products/coaxial/8/8/8CXN51' },
-  hp65:{ po:'6,5 po', nom:'B&C 6CXN36', d:180, cut:146, depth:91, kg:.7, hz:90, db:90, src:'https://www.bcspeakers.com/en/products/coaxial/6/8/6CXN36' },
-  hp5:{ po:'5 po', nom:'B&C 5CXN36', d:150, cut:123, depth:87, kg:.65, hz:94, db:89, src:'https://www.bcspeakers.com/en/products/coaxial/5/8/5CXN36' }
+  hp10:{ po:'10 po', nom:'B&C 10CXN64', w:250, fc:1.2, d:261, cut:233, depth:129, kg:3.95, hz:70, db:97, src:'https://www.bcspeakers.com/en/products/coaxial/10/8/10CXN64' },
+  hp8:{ po:'8 po', nom:'B&C 8CXN51', w:250, fc:1.8, d:225, cut:187, depth:111, kg:2.6, hz:70, db:97, src:'https://www.bcspeakers.com/en/products/coaxial/8/8/8CXN51' },
+  hp65:{ po:'6,5 po', nom:'B&C 6CXN36', w:100, fc:2, d:180, cut:146, depth:91, kg:.7, hz:90, db:90, src:'https://www.bcspeakers.com/en/products/coaxial/6/8/6CXN36' },
+  hp5:{ po:'5 po', nom:'B&C 5CXN36', w:100, fc:2, d:150, cut:123, depth:87, kg:.65, hz:94, db:89, src:'https://www.bcspeakers.com/en/products/coaxial/5/8/5CXN36' }
 };
-export const SILICONE = { bleu:'#2b316e', noir:'#1d1e22', rouge:'#b8282b', gris:'#8c9097', jaune:'#d2a62c' };
+export const SILICONE = { clair:'#e9eef0', bleu:'#2b316e', noir:'#1d1e22', rouge:'#b8282b', gris:'#8c9097', jaune:'#d2a62c' };
 export const INSTR = {
-  RES:    { nom:'RES',    role:'les traces du passé' },
-  PHASMA: { nom:'PHASMA', role:'l’écoute percussive de la salle' },
-  ESSAIM: { nom:'ESSAIM', role:'l’ambiance' }
+  RES:    { nom:'RES',    role:'les traces du passé', led:'#4f7dff' },
+  PHASMA: { nom:'PHASMA', role:'l’écoute percussive de la salle', led:'#ff4a32' },
+  ESSAIM: { nom:'ESSAIM', role:'l’ambiance', led:'#ffb45a' }
 };
 export const FT = 0.3048;
 // extérieur, intérieur (cm), masse vide (kg). Fiches Pelican.
