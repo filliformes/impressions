@@ -2,7 +2,7 @@
 
 **Maquette 3D en ligne : https://filliformes.github.io/impressions/**
 
-Installation audiovisuelle de **Vincent Fillion**. Trois instruments (RES, PHASMA, ESSAIM) sont disposés à distance égale autour d'un cercle de rétroprojection. Ils s'écoutent et se parlent sur un réseau fermé. L'image vient de [Palinopsia](https://github.com/filliformes/palinopsia), en régie.
+Installation audiovisuelle de **Vincent Fillion**. Trois instruments (RES, PHASMA, ESSAIM) sont disposés à distance égale autour d'un disque d'image. Ils s'écoutent et se parlent sur un réseau fermé. L'image vient de [Palinopsia](https://github.com/filliformes/palinopsia), en régie. Présentation prévue à la galerie EISODE (Artificiel, Montréal), du 3 au 6 juin 2027.
 
 ![L'espace](img/espace.jpg)
 
@@ -25,19 +25,33 @@ Chaque instrument tourne sur [Pandore](https://github.com/filliformes/pandore) e
 
 ![Vue éclatée](img/eclate.jpg)
 
-## L'espace
+## L'écran
 
-Une galerie blanche. Un disque horizontal de 6 pi (1,83 m), rétroprojeté par en dessous, dans un socle rond en tôle blanche de 1,96 m. Deux petits projecteurs à plat, dos à dos au centre, tirent chacun vers un miroir à 45° et éclairent un demi-disque. La maquette cherche le plus petit socle sans ombre portée.
+Un disque horizontal, un seul projecteur, une structure démontable. Trois systèmes sont dans la maquette.
 
-![Coupe](img/coupe.jpg)
+| Système | Image | Projecteur | Principe |
+|---|---|---|---|
+| **Table rétroprojetée** | 5,5 pi (1,68 m) | ViewSonic LS560WH (LED) | Anneau en six arcs, toile tendue, six pieds. Le projecteur et un miroir sont sur un banc pliant, sous la toile |
+| **Plateforme, rail ou mât** | 5,5 pi à EISODE | BenQ LK953ST (liste de prêt) | Plateforme en six segments. Le caisson s'accroche au rail 80/20 du plafond, ou au bout d'un mât portatif posé au bord du disque |
+| **Plateforme et portique** | selon le projecteur | au choix | Trois pieds entre les instruments, projecteur au centre |
+
+![Coupe de la table rétroprojetée](img/coupe.jpg)
+
+![Plateforme, accroche au rail](img/rail.jpg)
+
+![Mât portatif, éclaté](img/mat.jpg)
+
+## EISODE
+
+La galerie est modélisée d'après son plan coté : 8,06 × 9,27 m, plafond à 2,57 m, cinq rails 80/20, fenêtres, prises et connecteurs Cat 6. Les ouvertures doivent être occultées pendant l'exposition.
 
 ## La maquette
 
-- **Espace** : vues d'ensemble, du joueur, de la régie, coupe et dessus. Diamètre, hauteur, écarts et salle sont réglables.
+- **Espace** : la galerie, les instruments, le public et la régie. Vues d'ensemble, du joueur, en coupe, en maquette et de dessus. La position du disque, la lumière et l'écart se règlent.
 - **Instrument** : les deux stands, les deux porte-micros, vue éclatée, intérieur, cotes, export GLB (Rhino 8, Blender). On peut glisser l'instrument pour l'incliner sur sa base molle.
-- **Plan et cotes** : plan de l'espace et élévations, générés à partir des réglages.
-- **Signal** : chaîne audio, données et image.
-- **À trancher** : les questions de conception ouvertes.
+- **Écran** : le système choisi seul, avec vue éclatée, coupe, cotes et export GLB.
+- **Fabrication** : liste des pièces, colis, montage, tolérances, coupe cotée et fichiers DXF et CSV, calculés à partir des réglages.
+- **Plan et cotes**, **Signal**, **À trancher**.
 
 Les réglages sont dans l'adresse de la page : copier le lien partage la configuration.
 
@@ -45,4 +59,4 @@ Les réglages sont dans l'adresse de la page : copier le lien partage la configu
 
 Œuvre et conception : Vincent Fillion. Design du case, du PCB FLOU et de la base molle : François Auclair (Atelier FA). Pandore : Vincent Fillion, avec Alexandre Burton et Laurence Deschênes Villeneuve.
 
-Le case est remodelé d'après les cotes des fichiers de François. La hauteur de la base molle, le contour du PCB FLOU et l'image projetée sont provisoires.
+Le case est remodelé d'après les cotes des fichiers de François. La hauteur de la base molle, le contour du PCB FLOU, les masses et l'image projetée sont provisoires. Les cotes de fabrication sont à valider par la personne qui fabrique.

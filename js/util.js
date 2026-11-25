@@ -35,6 +35,8 @@ export function initMaterials(){
   M.fig    = std({ color:'#8d8f97', roughness:.95 });
   M.figDark= std({ color:'#5a5c64', roughness:.95 });
   M.table  = std({ color:'#26272b', roughness:.8 });
+  M.ply    = std({ color:'#cdb78f', roughness:.75 });
+  M.ramp   = std({ color:'#4a4540', roughness:.9 });
   M.skirt  = std({ color:'#1b1d24', roughness:.95, side:THREE.DoubleSide });
   const t = noiseTex(128,120,136,18); M.white.bumpMap = t; M.white.bumpScale = .12;
   const g = document.createElement('canvas'); g.width=g.height=64; const x=g.getContext('2d');

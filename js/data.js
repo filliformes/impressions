@@ -43,11 +43,3 @@ export const INSTR = {
   ESSAIM: { nom:'ESSAIM', role:'l’ambiance' }
 };
 export const FT = 0.3048;
-
-// BenQ HT2150ST (liste de prêt, cinq exemplaires) : 379 × 277 × 122 mm, 3,6 kg, rapport 0,69, décalage de 102,5 à 105 %.
-// up/dn : boîtier du côté de l'image et du côté opposé, depuis l'axe de l'objectif (m)
-const HT = { nom:'BenQ HT2150ST', aspect:16/9, px:1080, lm:2200, tr:.69, s:[.525,.55], dep:.277, up:.04, dn:.085, w:.379 };
-export const PROJ = {
-  duo:{ ...HT, n:2, titre:'Deux HT2150ST', court:'Dos à dos au centre, un miroir à 45° chacun, un demi-disque chacun.' },
-  solo:{ ...HT, n:1, titre:'Un HT2150ST', court:'Un seul projecteur et un miroir à 45°. Plus simple, image plus petite.' }
-};

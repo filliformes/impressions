@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>IMPRESSION[S]</title>
-<meta name="description" content="Maquette 3D d’IMPRESSION[S], installation audiovisuelle de Vincent Fillion : trois instruments autour d’un cercle de rétroprojection.">
+<meta name="description" content="Maquette 3D d’IMPRESSION[S], installation audiovisuelle de Vincent Fillion : trois instruments autour d’un disque d’image.">
 <meta property="og:title" content="IMPRESSION[S]">
-<meta property="og:description" content="Maquette 3D : trois instruments autour d’un cercle de rétroprojection.">
+<meta property="og:description" content="Maquette 3D : trois instruments autour d’un disque d’image.">
 <meta property="og:image" content="https://filliformes.github.io/impressions/img/espace.jpg">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='7' fill='%23333a7c'/><circle cx='16' cy='3.5' r='3' fill='%23c4232c'/><circle cx='5.2' cy='22.2' r='3' fill='%23c4232c'/><circle cx='26.8' cy='22.2' r='3' fill='%23c4232c'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,6 +21,8 @@
   <nav role="tablist" aria-label="Sections">
     <button role="tab" data-tab="espace" aria-selected="true">Espace</button>
     <button role="tab" data-tab="instrument" aria-selected="false">Instrument</button>
+    <button role="tab" data-tab="ecran" aria-selected="false">Écran</button>
+    <button role="tab" data-tab="fab" aria-selected="false">Fabrication</button>
     <button role="tab" data-tab="cotes" aria-selected="false">Plan et cotes</button>
     <button role="tab" data-tab="signal" aria-selected="false">Signal</button>
     <button role="tab" data-tab="choix" aria-selected="false">À trancher</button>
@@ -39,11 +41,16 @@
     <div id="panelIn"></div>
   </aside>
 
+  <section class="page" id="p-fab" hidden><div class="col" id="fabIn"></div></section>
+
   <section class="page" id="p-cotes" hidden>
     <div class="col">
       <h2>Plan de l’espace</h2>
       <p class="lede">Le plan et les élévations suivent les réglages choisis dans les vues 3D.</p>
       <div class="fig" id="plan"></div>
+      <h2>Coupe de l’écran</h2>
+      <p class="lede">Dans l’axe du projecteur. Cotes en millimètres.</p>
+      <div class="fig" id="coupe"></div>
       <h2>Les deux stands</h2>
       <p class="lede">Face et profil, à la même échelle. Cotes en millimètres.</p>
       <div class="fig" id="elev"></div>
@@ -76,7 +83,8 @@
         <tr><td>Ampli → haut-parleurs</td><td>2 × 2,5 mm²</td><td>Graves sommés en mono, en phase : les deux membranes s’opposent et les forces s’annulent</td></tr>
         <tr><td>Pandore ETH 1 → commutateur</td><td>Cat 6</td><td>Réseau fermé : bus de coordination OSC, dataFLOU, audio réseau</td></tr>
         <tr><td>Courant → instrument</td><td>1 par stand</td><td>Une seule entrée sur le stand : ampli et bloc 12 V du Pandore</td></tr>
-        <tr><td>Commutateur → régie</td><td>Cat 6</td><td>Palinopsia reçoit les données des trois instruments</td></tr>
+        <tr><td>Commutateur → régie</td><td>Cat 6</td><td>Palinopsia reçoit les données des trois instruments. EISODE a des prises Cat 6 (17 à 21) vers l’atelier</td></tr>
+        <tr><td>Courant de la salle</td><td>Circuits 2, 4, 6 et 8</td><td>Prises NEMA 5-15, 15 A. Le circuit 8 a une terre isolée : pour l’audio</td></tr>
         <tr><td>Régie → projecteur</td><td>SDI ou HDBaseT</td><td>Même principe que Kamouropsie au-delà de 10 m</td></tr>
       </table></div>
     </div>
