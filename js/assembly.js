@@ -1,6 +1,6 @@
 // Assemblage d'un instrument complet, personnages d'échelle.
 import * as THREE from 'three';
-import { M, mesh, cbox, ccyl, rod, tube } from './util.js';
+import { M, mesh, rod, tube } from './util.js';
 import { CASE as C, PCB, BACK, BASE_H, SILICONE } from './data.js';
 import { buildCase, buildSoft, oledCanvas } from './instrument.js';
 import { buildStand, buildMic } from './stands.js';
@@ -11,13 +11,13 @@ const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 export function buildAssembly(o){
   const Hs = o.padH/1000 - PAD_OFF, g = new THREE.Group();
   const oled = oledCanvas(); oled.draw(o.nom||'RES',0);
-  const { group:stand, info } = buildStand(o.stand,Hs,{open:o.open,xray:o.xray,color:SILICONE[o.silicone]});
+  const { group:stand, info } = buildStand(o.stand,Hs,{open:o.open,xray:o.xray,hp:o.hp||'hp10'});
   g.add(stand);
   const y0 = Hs + (BASE_H-C.zBottom)/1000;
   const soft = buildSoft(SILICONE[o.silicone]); g.add(soft);
   const tilt = new THREE.Group(), cs = buildCase(oled); tilt.add(cs); g.add(tilt);
-  const mic = buildMic(o.mic,Hs,o.stand); g.add(mic);
-  const cables = new THREE.Group(); g.add(cables); buildCables(cables,Hs,y0,o.stand);
+  const mic = buildMic(o.mic,Hs,info.dims); g.add(mic);
+  const cables = new THREE.Group(); g.add(cables); buildCables(cables,Hs,y0,info.dims);
   const P = cs.userData.parts, pivot = 25/1000;
   const set = { e:0, rx:0, rz:0 };
   function apply(){
@@ -36,9 +36,9 @@ export function buildAssembly(o){
   return { g, info, oled, set, apply, tilt, soft, cs, mic, nom:o.nom||'RES', Hs, y0 };
 }
 
-function buildCables(g,Hs,y0,stand){
+function buildCables(g,Hs,y0,m){
   const at=n=>{ const o=BACK.find(b=>b[0]===n); return { x:(PCB.x+o[1]-C.cx)/1000, y:y0+(PCB.zTop+o[5])/1000, z:-(C.y1+o[6]-C.cy)/1000 }; };
-  const inY=Hs-.17, inZ=stand==='A'?-.15:-.145;
+  const inY=m.kind==='B'?Hs-.15:Math.min(m.sh-.06,Hs-.13), inZ=-m.at(inY)[1];
   const run=(p,len,rp,rc,mat,ix)=>{
     const b=mesh(new THREE.CylinderGeometry(rp,rp*.85,len,24).rotateX(-Math.PI/2),mat); b.position.set(p.x,p.y,p.z-len/2); g.add(b);
     const e=V(p.x,p.y,p.z-len);
@@ -48,7 +48,7 @@ function buildCables(g,Hs,y0,stand){
   const out=at('OUT'); run({...out,y:out.y+.0084},.05,.0072,.003,M.dark,-.03); run({...out,y:out.y-.0084},.05,.0072,.003,M.dark,-.015); // TRS vers l'ampli
   run(at('ETH1'),.036,.0072,.003,M.pcb,.02);                         // réseau
   run(at('DC'),.03,.005,.0025,M.cable,.035);                         // alimentation
-  { const c=mesh(new THREE.CylinderGeometry(.055,.055,.006,32).rotateX(Math.PI/2).scale(1.1,.36,1),M.black); c.position.set(0,inY,inZ); if(stand==='B') c.rotation.x=.35; g.add(c); }
+  { const c=mesh(new THREE.CylinderGeometry(.055,.055,.006,32).rotateX(Math.PI/2).scale(1.1,.36,1),M.black); c.position.set(0,inY,inZ); if(m.kind==='B') c.rotation.x=Math.atan2(m.at(m.sh)[1]-m.at(Hs)[1],Hs-m.sh); g.add(c); }
 }
 
 // --- silhouettes d'échelle

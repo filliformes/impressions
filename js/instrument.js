@@ -16,7 +16,7 @@ function lettering(){
   const c=document.createElement('canvas'); c.width=1024; c.height=176; const x=c.getContext('2d');
   x.fillStyle='#c4232c'; x.font='bold 176px Arial, Helvetica, sans-serif'; x.textBaseline='alphabetic';
   x.textAlign='left'; const w=x.measureText('PANDORE').width; x.setTransform(1000/w,0,0,1,12,0); x.fillText('PANDORE',0,152);
-  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; return t;
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; t.userData.keep=true; return t;
 }
 let LETTER=null;
 
@@ -54,6 +54,8 @@ export function buildCase(oled){
   const ws=polyShape([[C.y0,C.zPlate],[C.y1,C.zPlate],[C.y1,C.zDeck-3.5],[C.y0,C.zDeck-3.5]]);
   HOLES.forEach((row,j)=>row.forEach((d,i)=>ws.holes.push(circ(10.8+7*i,34.7+7*j,d/2))));
   b.add(mesh(extrudeX(ws,6.3,{curveSegments:7}),M.white));
+  // côté droit plein et rigide, posé contre la tranche
+  cbox(b,[C.w,C.y0,C.zBottom],[C.w+C.side,C.y1,C.zDeck],M.white,.8);
   // noir derrière les perforations
   cbox(b,[6.5,10,24],[7.2,176,70],M.black);
   const dk=polyShape([[0,C.y0],[C.w,C.y0],[C.w,C.y1],[0,C.y1]]);
@@ -119,7 +121,7 @@ export function buildCase(oled){
       cbox(p,[u-o[3]*.36,y1+o[6]-.2,z-o[4]*.34],[u+o[3]*.36,y1+o[6]+.15,z+o[4]*.34],M.hole);
       if(o[0]==='OUT') [8.4,-8.4].forEach(dz=>ccyl(p,4.4,.6,[u,y1+o[6]+.2,z+dz],M.gold,'y')); }
   });
-  RIGHT.forEach(o=>{ const y=PCB.y+o[1], z=zt+o[4]; cbox(p,[PCB.x+PCB.w-9,y-o[2]/2,z-o[3]/2],[PCB.x+PCB.w+1.5,y+o[2]/2,z+o[3]/2],/GROVE/.test(o[0])?M.btn:M.black,.3); });
+  RIGHT.forEach(o=>{ const y=PCB.y+o[1], z=zt+o[4]; cbox(p,[PCB.x+PCB.w-9,y-o[2]/2,z-o[3]/2],[PCB.x+PCB.w-.1,y+o[2]/2,z+o[3]/2],/GROVE/.test(o[0])?M.btn:M.black,.3); });
   cbox(p,[118.8,75.8,zt+1],[167.1,145,zt+9],M.pcb2,.3); cbox(p,[121,80,zt+9],[165,140,zt+20],M.grey,.6); ccyl(p,19,2.5,[143,110.6,zt+21],M.black);
   cbox(p,[20,90,zt],[70,130,zt+2],M.gold,.2); cbox(p,[185,90,zt],[215,110,zt+3],M.black,.3); cbox(p,[208,73,zt],[218,81,zt+15],M.btn,.4);
   const inside=mesh(new THREE.BoxGeometry(C.w-14,60,45),M.black,false); inside.position.set(C.cx-3,40,47); b.add(inside);

@@ -14,6 +14,7 @@ export const CASE = {
   buttons: [[80.9,11],[120.7,11],[100.7,42]],
   oled: [218.8,148.4,260.9,175.6], enc: [240.1,136.8], slider: [235.6,38.6,245.1,113.6], sliderKnobY: 76.1,
   text: [9.4,59.2,71.2,68.4],
+  side: 2,                       // épaisseur du côté droit, plein et rigide (demandé par Vincent, absent du 3MF)
   puck: {x:126.9,y:97.9,d:44.8,z0:1.6,z1:15.5}
 };
 // Perforations de la paroi gauche : 24 colonnes (y = 10,8 + 7 i), 5 rangées (z = 34,7 + 7 j), diamètre en mm
@@ -35,7 +36,13 @@ export const BACK = [
 ];
 export const RIGHT = [['DIO',21.81,20.4,8.1,4.03],['AIO',44.69,20.4,8.1,4.03],['GROVE B',63.75,10,4.7,2.33],['GROVE A',77,10,4.7,2.33],['VIN',88.2,8.4,8.5,5]];
 export const BASE_H = 80;        // hauteur de la base molle, estimée sur les rendus de François
-export const DRIVER = { d: 261, cut: 233, depth: 129, total: 142, kg: 3.95 }; // coaxial 10 po de référence (B&C 10CXN64)
+// Haut-parleurs coaxiaux de référence (fiches B&C). d : diamètre, cut : perçage, depth : profondeur (mm), hz : bas de la bande annoncée, db : sensibilité
+export const HP = {
+  hp10:{ po:'10 po', nom:'B&C 10CXN64', d:261, cut:233, depth:129, kg:3.95, hz:70, db:97, src:'https://loudspeakerdatabase.com/BC/10CXN64' },
+  hp8:{ po:'8 po', nom:'B&C 8CXN51', d:225, cut:187, depth:111, kg:2.6, hz:70, db:97, src:'https://www.bcspeakers.com/en/products/coaxial/8/8/8CXN51' },
+  hp65:{ po:'6,5 po', nom:'B&C 6CXN36', d:180, cut:146, depth:91, kg:.7, hz:90, db:90, src:'https://www.bcspeakers.com/en/products/coaxial/6/8/6CXN36' },
+  hp5:{ po:'5 po', nom:'B&C 5CXN36', d:150, cut:123, depth:87, kg:.65, hz:94, db:89, src:'https://www.bcspeakers.com/en/products/coaxial/5/8/5CXN36' }
+};
 export const SILICONE = { bleu:'#2b316e', noir:'#1d1e22', rouge:'#b8282b', gris:'#8c9097', jaune:'#d2a62c' };
 export const INSTR = {
   RES:    { nom:'RES',    role:'les traces du passé' },
@@ -43,3 +50,9 @@ export const INSTR = {
   ESSAIM: { nom:'ESSAIM', role:'l’ambiance' }
 };
 export const FT = 0.3048;
+// extérieur, intérieur (cm), masse vide (kg). Fiches Pelican.
+export const PELICAN = {
+  a1637:{ nom:'1637 Air', ext:[67.59,52.45,37.77], int:[59.51,44.58,33.66], kg:6.9, src:'https://www.pelican.com/us/en/product/cases/air/1637' },
+  a1615:{ nom:'1615 Air', ext:[82.75,46.74,27.99], int:[75.16,39.37,23.83], kg:6.38, src:'https://www.pelican.com/us/en/product/cases/air/1615' },
+  p1650:{ nom:'1650', ext:[80.24,51.99,31.62], int:[72.57,44.5,27.05], kg:10.9, src:'https://www.pelican.com/us/en/product/cases/protector/1650' }
+};

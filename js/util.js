@@ -121,4 +121,5 @@ export function dots(list,mat){ // list : [position, normale, rayon]
   list.forEach((d,i)=>{ q.setFromUnitVectors(Z,d[1]); m.compose(d[0],q,new THREE.Vector3(d[2],d[2],1)); im.setMatrixAt(i,m); });
   return im;
 }
-export function disposeTree(o){ o.traverse(n=>{ if(n.geometry) n.geometry.dispose(); }); o.removeFromParent(); }
+// libère géométries, textures propres, ombres et instances. Les matériaux sont laissés : leurs programmes resservent à la reconstruction.
+export function disposeTree(o){ o.traverse(n=>{ n.geometry?.dispose(); if(n.isLight||n.isInstancedMesh) n.dispose?.(); for(const m of [n.material].flat()) if(m?.map&&!m.map.userData.keep&&!Object.values(M).includes(m)) m.map.dispose(); }); o.removeFromParent(); }

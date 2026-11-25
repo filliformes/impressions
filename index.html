@@ -23,6 +23,7 @@
     <button role="tab" data-tab="instrument" aria-selected="false">Instrument</button>
     <button role="tab" data-tab="ecran" aria-selected="false">Écran</button>
     <button role="tab" data-tab="fab" aria-selected="false">Fabrication</button>
+    <button role="tab" data-tab="transport" aria-selected="false">Transport</button>
     <button role="tab" data-tab="cotes" aria-selected="false">Plan et cotes</button>
     <button role="tab" data-tab="signal" aria-selected="false">Signal</button>
     <button role="tab" data-tab="choix" aria-selected="false">À trancher</button>
@@ -55,7 +56,7 @@
       <p class="lede">Face et profil, à la même échelle. Cotes en millimètres.</p>
       <div class="fig" id="elev"></div>
       <div class="scroll"><table id="tbl"></table></div>
-      <p class="note">Masses estimées : tôle d’acier de 1,5 mm, caisson, deux haut-parleurs de 3,95 kg, ampli, instrument et base molle. Force de basculement : poussée horizontale à la hauteur des pads qui fait lever le pied, sans lest.</p>
+      <p class="note">Masses estimées pour la version en tôle d’acier de 1,5 mm, avec caisson, haut-parleurs, ampli, instrument et base molle. Le volume par haut-parleur tient compte de la taille choisie. Force de basculement : poussée horizontale à la hauteur des pads qui fait lever le pied, sans lest.</p>
       <h2>Le case et la base molle</h2>
       <div class="scroll"><table>
         <tr><th>Élément</th><th>Cote (mm)</th><th>Source</th></tr>
@@ -64,6 +65,7 @@
         <tr><td>Capot FLOU, largeur</td><td>201,5</td><td>3MF</td></tr>
         <tr><td>Pads XY</td><td>69 × 69, espacés de 126,3 (centre à centre)</td><td>3MF</td></tr>
         <tr><td>Slider, écran</td><td>75 × 9,5 ; 35,1 × 17,5</td><td>3MF</td></tr>
+        <tr><td>Côté droit</td><td>plein, 2 d’épaisseur</td><td>demandé par Vincent, à dessiner</td></tr>
         <tr><td>Jupe sous le case</td><td>cadre de 20, hauteur 15,5</td><td>3MF</td></tr>
         <tr><td>Base molle</td><td>266,4 × 178,9 × 80</td><td>estimée sur les rendus</td></tr>
         <tr><td>Gorge de la base</td><td>23,2 de large, 17 de profond</td><td>proposée (jeu de 1,6)</td></tr>
@@ -74,7 +76,7 @@
   <section class="page" id="p-signal" hidden>
     <div class="col">
       <h2>Chaîne du signal</h2>
-      <p class="lede">Chaque instrument est autonome pour le son. Seules les données vont à la régie, seule l’image en revient.</p>
+      <p class="lede">Chaque instrument est autonome pour le son. Seules les données vont à l’ordinateur de l’image, seule l’image en revient.</p>
       <div class="fig" id="sig"></div>
       <div class="scroll"><table>
         <tr><th>Liaison</th><th>Câble</th><th>Remarque</th></tr>
@@ -83,9 +85,10 @@
         <tr><td>Ampli → haut-parleurs</td><td>2 × 2,5 mm²</td><td>Graves sommés en mono, en phase : les deux membranes s’opposent et les forces s’annulent</td></tr>
         <tr><td>Pandore ETH 1 → commutateur</td><td>Cat 6</td><td>Réseau fermé : bus de coordination OSC, dataFLOU, audio réseau</td></tr>
         <tr><td>Courant → instrument</td><td>1 par stand</td><td>Une seule entrée sur le stand : ampli et bloc 12 V du Pandore</td></tr>
-        <tr><td>Commutateur → régie</td><td>Cat 6</td><td>Palinopsia reçoit les données des trois instruments. EISODE a des prises Cat 6 (17 à 21) vers l’atelier</td></tr>
+        <tr><td>Commutateur → régie</td><td>Cat 6</td><td>Palinopsia reçoit les données des trois instruments. Dans l’écran, ce câble fait quelques centimètres</td></tr>
+        <tr><td>Pandore → sub (option)</td><td>Audio réseau, ou sortie casque</td><td>Un passe-bas vers 90 Hz soulage les petits haut-parleurs. Le sub est découplé du banc optique</td></tr>
         <tr><td>Courant de la salle</td><td>Circuits 2, 4, 6 et 8</td><td>Prises NEMA 5-15, 15 A. Le circuit 8 a une terre isolée : pour l’audio</td></tr>
-        <tr><td>Régie → projecteur</td><td>SDI ou HDBaseT</td><td>Même principe que Kamouropsie au-delà de 10 m</td></tr>
+        <tr><td>Ordinateur de l’image → projecteur</td><td>HDMI court, sinon SDI ou HDBaseT</td><td>HDMI si l’ordinateur est dans l’écran, à côté du projecteur. SDI ou HDBaseT au-delà de 10 m, comme pour Kamouropsie</td></tr>
       </table></div>
     </div>
   </section>
@@ -97,6 +100,6 @@
     </div>
   </section>
 </main>
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js" onerror="document.getElementById('load').textContent='La maquette n’a pas pu se charger. Recharger la page, ou vérifier la connexion.'"></script>
 </body>
 </html>
