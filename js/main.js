@@ -91,9 +91,11 @@ function buildStudio(){
 }
 // écartements : instrument et stand. Les noms suivent les pièces
 function ecarte(){ asm.forEach(a=>{ a.set.e=S.eclate; a.set.s=S.mode==='un'?S.eclS:0; a.apply(); }); noms(); }
+// sur un petit écran, seulement les noms principaux
+const PEU=['Caisson de bouleau','Fosi BT20A','Cône','Saladier','Bloc 24 V, 4,5 A'];
 function noms(){
   clear(eclLab); if(S.mode!=='un'||!asm[0]) return; const a=asm[0], n=(t,p)=>label(t,p,'',eclLab);
-  if(S.eclS>.3) a.stand.userData.ecl.userData.noms(S.eclS).forEach(l=>n(...l));
+  if(S.eclS>.3) a.stand.userData.ecl.userData.noms(S.eclS).filter(l=>stage.clientWidth>600||PEU.includes(l[0])).forEach(l=>n(...l));
   if(S.eclate>.3){ const P=a.cs.userData.parts, y=(p,z)=>a.tilt.position.y+.025+(p.position.z+z)/1000; [['Contrôles',P.controls,97],['Capot FLOU',P.cover,90],['PCB FLOU',P.flou,80],['Case',P.body,50],['Pandore',P.pandore,36],['Fond et jupe',P.bottom,19],['Bande LED',P.led,8]].forEach(([t,p,z])=>n(t,V(-.21,y(p,z),0))); n(S.silicone==='clair'?'Base molle, silicone clair':'Base molle',V(-.23,a.soft.position.y-.035,0)); }
 }
 const PAS=()=>S.mode==='tailles'?.78:1.02;
@@ -141,7 +143,7 @@ function viewRoom(ms=1100){
 function viewEcran(ms=1100){ const k=portrait()?1.6:1, hi=S.sys!=='dessous', so=S.sys==='sol', top=so?scr.O.s.rear+.3:2.6, f=so?Math.max(top/2.4,1):1;
   if(so) goto(S.eclE>.02?V(3.6*k*f,2*f,3.9*k*f):V(2.7*k*f,1.5*f,3.1*k*f),V(0,top*.49,0),38,ms);
   else if(S.eclE>.02) goto(hi?V(5*k,2.7*k,5.2*k):V(4.4*k,2.6*k,4.9*k),V(hi?0:.9,hi?1.4:.75,0),38,ms); else goto(hi?V(3.9*k,2.2,3.9*k):V(2.9*k,1.9,3.0*k),V(0,hi?1.05:.5,hi?-.2:0),38,ms); }
-function viewStudio(ms=1100){ const k=portrait()?1.45:1; if(S.mode!=='un'){ const t=S.mode==='tailles', q=k*(portrait()?(t?1.7:1.25):1); goto(t?V(2.5*q,1.45,3.75*q):V(1.15*q,1.4,4.1*q),V(0,.68,0),34,ms); } else if(S.eclS>.02&&asm[0]?.stand.userData.ecl){ const [a,b]=asm[0].stand.userData.ecl.userData.span, q=S.eclS, w=(b-a)*q+.45*(1-q), d=Math.max(2.15,w/(portrait()?.36:.72)), x=(a+b)/2*q; goto(V(x+d*.1,1.0,d),V(x,.56,.08),34,ms); } else if(S.figure) goto(V(2.75*k,1.5,-.35),V(.02,.83,.22),34,ms); else goto(V(1.12*k,1.6,2.12*k),V(.03,.72,0),34,ms); }
+function viewStudio(ms=1100){ const k=portrait()?1.45:1; if(S.mode!=='un'){ const t=S.mode==='tailles', q=k*(portrait()?(t?1.7:1.25):1); goto(t?V(2.5*q,1.45,3.75*q):V(1.15*q,1.4,4.1*q),V(0,.68,0),34,ms); } else if(S.eclS>.02&&asm[0]?.stand.userData.ecl){ const [a,b]=asm[0].stand.userData.ecl.userData.span, q=S.eclS, w=(b-a)*q+.45*(1-q), d=Math.max(2.15,w/(portrait()?.3:.72)), x=(a+b)/2*q; goto(V(x+d*.1,1.0,d),V(x,.56,.08),34,ms); } else if(S.figure) goto(V(2.75*k,1.5,-.35),V(.02,.83,.22),34,ms); else goto(V(1.12*k,1.6,2.12*k),V(.03,.72,0),34,ms); }
 function viewTrp(ms=1100){ const k=(portrait()?(S.tN===1?1.5:2.1):1)*(S.tN>2?1.35:S.tN===1?.8:1); goto(V(.55*k,1.75*k,2.15*k),V(0,.2,.02),36,ms); }
 const portrait=()=>stage.clientWidth<stage.clientHeight*1.05;
 

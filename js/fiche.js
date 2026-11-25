@@ -6,7 +6,7 @@ import { PAD_OFF } from './assembly.js';
 import { optics, diamMax, SYS, PA, PB, PC, PS, rpOf, GAP, secteurs } from './optics.js';
 import { centre, lieuOf, priseOf, satPos } from './space.js';
 import { buildScreen } from './screen.js';
-import { SOUTE, pack, resume } from './transport.js';
+import { SOUTE, pack, resume, items } from './transport.js';
 import { SUB } from './tech.js';
 
 const fr=(v,d=0)=>v.toLocaleString('fr-CA',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -97,7 +97,7 @@ export function drawChoix(box,S){
   Object.values(HP).forEach(h=>{ src[h.nom]=[h.src]; }); Object.values(PELICAN).forEach(p=>{ src['Pelican '+p.nom]=[p.src]; }); src['Bagages en soute (Air Canada)']=[SOUTE.src]; src['Kanto SUB8']=[SUB.src]; src['Fosi BT20A']=['https://fosiaudio.com/pages/user-instruction-bt20a','https://www.richersounds.com/content/product_files/FosiAudioBT20AManual.pdf']; src['TPA3116D2 (Texas Instruments)']=['https://www.ti.com/product/TPA3116D2'];
   const BAS=['A','B'].flatMap(k=>Object.keys(HP).map(h=>{ const m=standDims(k,S.padH/1000-PAD_OFF,h); return (m.kg+3.2+4.3+(S.mic==='bras'?1.6:0))*9.81*m.appui/(S.padH/1000); }));
   // ce qui entre dans deux cases, par taille de haut-parleur, dessus seul
-  const T=Object.entries(HP).map(([k,h])=>{ const b={ ...d0,sys:'sol',hp:k,diam:5.5,plateH:60,stand:'A',padH:980,tCase:'a1637',tCol:'tissu',tBase:'creuse',tProj:false,tMic:false,tCab:true,tSub:false,sub:false,sat:false,regieE:true,mic:'bras' }; let n=1,p; for(;n<=4;n++){ p=pack({...b,tN:n},160); if(!p.left.length&&!p.hors.length&&p.cases.every(c=>c.kg<=SOUTE.max+SOUTE.tol)) break; } const q=pack({...b,tN:2},160), tb=[3,4].map(tN=>pack({...b,sys:'dessous',ecranH:950,miroir:'papier',tProj:true,tN},120)).find(x=>!x.left.length&&!x.hors.length&&x.cases.every(c=>c.kg<=SOUTE.max+SOUTE.tol)); return { h,n,p,q,tb }; });
+  const T=Object.entries(HP).map(([k,h])=>{ const b={ ...d0,sys:'sol',hp:k,diam:5.5,plateH:60,stand:'A',padH:980,tCase:'a1637',tCol:'tissu',tBase:'creuse',tProj:false,tMic:false,tCab:true,tSub:false,sub:false,sat:false,regieE:true,mic:'bras' }; const lourd=(c,n)=>items(c).list.reduce((a,i)=>a+i.kg,0)/n+PELICAN.a1637.kg>SOUTE.max+SOUTE.tol; let n=1,p; for(;n<=4;n++){ if(lourd(b,n)) continue; p=pack({...b,tN:n},160); if(!p.left.length&&!p.hors.length&&p.cases.every(c=>c.kg<=SOUTE.max+SOUTE.tol)) break; } const q=pack({...b,tN:2},160), bt={...b,sys:'dessous',ecranH:950,miroir:'papier',tProj:true}, tb=[3,4].filter(tN=>!lourd(bt,tN)).map(tN=>pack({...bt,tN},120)).find(x=>!x.left.length&&!x.hors.length&&x.cases.every(c=>c.kg<=SOUTE.max+SOUTE.tol)); return { h,n,p,q,tb }; });
   const tour=T.map(({h,n,p,q,tb})=>`<tr><td><strong>${h.po}</strong></td><td>${h.nom}</td><td>${h.hz} Hz à 18 kHz</td><td>${h.db} dB</td><td>${q.left.length?`non, reste ${resume(q.left).map(i=>(i.n>1?i.n+' × ':'')+i.nom.toLowerCase()).join(', ')}`:`oui, ${q.cases.map(c=>fr(c.kg,1)).join(' et ')} kg`}</td><td>${n<=4?`${n} (${p.cases.map(c=>fr(c.kg)).join(', ')} kg)`:'plus de 4'}</td><td>${tb?`${tb.cases.length} (${tb.cases.map(c=>fr(c.kg)).join(', ')} kg)`:'plus de 4'}</td></tr>`).join('');
   const Q=[
    ['Le dessus seul',[`Suggestion de Myriam : le dessus de la table (anneau et toile) se détache et sert seul, ailleurs, avec un projecteur au gril. L’anneau est le même partout, à 7 cm de l’image, en douze arcs d’environ 47 cm. Deux toiles suffisent : la grise par-dessous, la blanche par-dessus.`,
