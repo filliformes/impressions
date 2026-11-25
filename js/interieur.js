@@ -4,8 +4,8 @@ import { M, mesh, cbox, ccyl, rod, loft, dots } from './util.js';
 import { HP } from './data.js';
 
 const V=(x,y,z)=>new THREE.Vector3(x,y,z), PI=Math.PI;
-// Fosi Audio BT20A, d'après son manuel : 130 × 100 × 35 mm hors tout (boutons et bornes compris), 700 g, 24 V 4,5 A
-export const AMPLI={ nom:'Fosi BT20A', w:.1, h:.035, d:.112, kg:.7, volt:24, amp:4.5 };
+// Fosi Audio TB10A, d'après son manuel : 130 × 100 × 35 mm hors tout (boutons et bornes compris), 650 g, 24 V 4,5 A, entrée RCA seulement
+export const AMPLI={ nom:'Fosi TB10A', w:.1, h:.035, d:.112, kg:.65, volt:24, amp:4.5 };
 // puissance propre par canal dans 8 Ω sous 24 V (écrêtage, ponts de 0,24 Ω) et niveau à 1 m
 export const ampliW=z=>(AMPLI.volt/(z+.24))**2*z/2;
 export const niveau=hp=>HP[hp].db+10*Math.log10(ampliW(8));
@@ -43,19 +43,19 @@ export function hpDetail(hp,{cut=false}={}){
 // filtre passif deux voies : bobine, condensateurs, résistance
 export function filtre(){ const g=new THREE.Group(); cbox(g,[-.045,0,-.032],[.045,.0016,.032],M.pcb); for(const [x,z,r,h] of [[-.023,-.008,.017,.016],[.02,.014,.012,.012]]){ ccyl(g,r,h,[x,.002+h/2,z],M.copper,'y'); ccyl(g,r*.42,h+.0006,[x,.002+h/2,z],M.black,'y'); } for(const [x,z,l] of [[.022,-.017,.03],[.022,-.004,.024]]) ccyl(g,.006,l,[x,.0085,z],M.red,'x'); cbox(g,[-.04,.002,.018],[-.018,.008,.026],M.btn,.001); for(let i=0;i<3;i++) cbox(g,[-.012+i*.009,.002,.022],[-.005+i*.009,.011,.031],M.grey,.0006); return g; }
 
-// façade du BT20A, dans le plan z = 0, boutons vers -z : interrupteur, aigu, grave, volume
+// façade du TB10A, dans le plan z = 0, boutons vers -z. De gauche à droite, vu de face (donc de +x vers -x) : interrupteur, témoin, aigu, grave, volume
 export function facade(g){
   const { w,h }=AMPLI; cbox(g,[-w/2,-h/2,-.003],[w/2,h/2,0],M.black,.0012); [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([x,y])=>ccyl(g,.0028,.0015,[x*(w/2-.0055),y*(h/2-.0055),-.0033],M.steel,'z',null,18));
-  [-.036,-.008,.02].forEach((x,i)=>{ const r=i?.0092:.0098; ccyl(g,r,.013,[x,-.001,-.0095],M.dark,'z',r*1.03); cbox(g,[x-.0005,-.0005,-.0163],[x+.0005,r*.82,-.0158],M.btn); });      // vu de l'arrière : volume, grave, aigu
-  ccyl(g,.0034,.006,[.041,-.001,-.005],M.steel,'z'); ccyl(g,.0013,.001,[.032,-.004,-.0034],M.led,'z',null,12);
+  [.0126,-.0112,-.035].forEach(x=>{ const r=.0089; ccyl(g,r,.013,[x,-.0028,-.0095],M.dark,'z',r*1.03); cbox(g,[x-.0005,-.0023,-.0163],[x+.0005,r*.82-.0028,-.0158],M.btn); });
+  ccyl(g,.0036,.006,[.0368,-.0055,-.005],M.steel,'z'); ccyl(g,.0011,.001,[.0272,-.0052,-.0034],M.led,'z',null,12);
 }
 // l'ampli complet, façade vers -z, en pièces
 export function ampli(){
   const g=new THREE.Group(), { w,h,d }=AMPLI, L=[], part=(ex,nom)=>{ const p=new THREE.Group(); p.userData={ ex,nom }; g.add(p); L.push(p); return p; };
   const f=part(V(0,0,-.05),'Façade'); facade(f);
   const b=part(V(0,0,0),'Châssis'); cbox(b,[-w/2,-h/2,0],[w/2,-h/2+.002,d],M.dark,.0005); for(const s of [-1,1]) cbox(b,[s>0?w/2-.002:-w/2,-h/2,0],[s>0?w/2:-w/2+.002,-.004,d],M.dark);
-  cbox(b,[-w/2,-h/2,d-.002],[w/2,h/2,d],M.dark); for(const x of [.026,.041]) { ccyl(b,.0055,.009,[x,-.001,d+.004],M.black,'z'); ccyl(b,.0025,.0095,[x,-.001,d+.0045],M.gold,'z'); }
-  for(const [x,y,m] of [[-.006,.008,M.red],[-.006,-.009,M.black],[.012,.008,M.red],[.012,-.009,M.black]]) ccyl(b,.0048,.012,[x,y,d+.006],m,'z'); cbox(b,[-.041,-.012,d],[-.029,0,d+.003],M.black,.001); ccyl(b,.0045,.006,[-.035,.009,d+.003],M.gold,'z');
+  cbox(b,[-w/2,-h/2,d-.002],[w/2,h/2,d],M.dark); for(const x of [-.0356,-.0197]) { ccyl(b,.0055,.009,[x,-.001,d+.004],M.black,'z'); ccyl(b,.0025,.0095,[x,-.001,d+.0045],M.gold,'z'); }
+  for(const [x,y,m] of [[-.0023,.008,M.red],[-.0023,-.009,M.black],[.0186,.008,M.red],[.0186,-.009,M.black]]) ccyl(b,.0048,.012,[x,y,d+.006],m,'z'); cbox(b,[.0292,-.0085,d],[.0412,.0035,d+.003],M.black,.001); ccyl(b,.0022,.0035,[.0352,-.0025,d+.0018],M.hole,'z');
   const c=part(V(0,.05,0),'Carte'); cbox(c,[-w/2+.004,-.0115,.004],[w/2-.004,-.0099,d-.004],M.pcb); for(const x of [-.02,.02]){ cbox(c,[x-.006,-.0099,.052],[x+.006,-.0085,.063],M.hole); for(let i=0;i<6;i++) cbox(c,[x-.011+i*.004,-.0084,.046],[x-.009+i*.004,.008,.069],M.grey); cbox(c,[x-.012,-.0086,.045],[x+.012,-.0064,.07],M.grey); }
   for(const x of [-.034,-.013,.013,.034]) cbox(c,[x-.0065,-.0099,.077],[x+.0065,.0005,.09],M.dark,.001); for(const [x,z] of [[-.036,.028],[-.036,.044],[.037,.03]]) { ccyl(c,.0062,.02,[x,.0005,z],M.black,'y'); ccyl(c,.0056,.0008,[x,.0108,z],M.steel,'y'); } for(let i=0;i<4;i++) ccyl(c,.003,.009,[-.016+i*.011,-.005,.026],M.gold,'y');
   const t=part(V(0,.105,0),'Capot'); cbox(t,[-w/2,h/2-.002,0],[w/2,h/2,d-.0005],M.black,.0005); for(const s of [-1,1]) cbox(t,[s>0?w/2-.0015:-w/2-.0005,-.003,0],[s>0?w/2+.0005:-w/2+.0015,h/2-.001,d-.0005],M.black); for(let i=0;i<7;i++) cbox(t,[-.032,h/2-.0005,.03+i*.009],[.032,h/2+.0003,.034+i*.009],M.hole);

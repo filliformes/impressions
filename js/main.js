@@ -12,7 +12,7 @@ import { SILICONE, INSTR, FT, HP, PELICAN } from './data.js';
 import { STANDS } from './stands.js';
 import { buildAssembly, person } from './assembly.js';
 import { buildSpace, degagement } from './space.js';
-import { ampliW, niveau } from './interieur.js';
+import { AMPLI, niveau } from './interieur.js';
 import { buildScreen } from './screen.js';
 import { SYS, PA, PB, PC, PS, VINYLE, optics, diamMax, diamMin, projOf } from './optics.js';
 import { SOUTE, colOf, resume, buildTransport } from './transport.js';
@@ -92,7 +92,7 @@ function buildStudio(){
 // écartements : instrument et stand. Les noms suivent les pièces
 function ecarte(){ asm.forEach(a=>{ a.set.e=S.eclate; a.set.s=S.mode==='un'?S.eclS:0; a.apply(); }); noms(); }
 // sur un petit écran, seulement les noms principaux
-const PEU=['Caisson de bouleau','Fosi BT20A','Cône','Saladier','Bloc 24 V, 4,5 A'];
+const PEU=['Caisson de bouleau',AMPLI.nom,'Cône','Saladier','Bloc 24 V, 4,5 A'];
 function noms(){
   clear(eclLab); if(S.mode!=='un'||!asm[0]) return; const a=asm[0], n=(t,p)=>label(t,p,'',eclLab);
   if(S.eclS>.3) a.stand.userData.ecl.userData.noms(S.eclS).filter(l=>stage.clientWidth>600||PEU.includes(l[0])).forEach(l=>n(...l));
@@ -227,7 +227,7 @@ function readout(){
     const li=(t,L,w)=>L.length?`<h4 class="${w?'warn':''}">${t}</h4><ul class="it">${L.map(i=>`<li><i style="background:${colOf(i.g)}"></i>${i.n>1?i.n+' × ':''}${i.nom}<b>${fr(i.tot,1)} kg</b>${i.note?`<small>${i.note}</small>`:''}</li>`).join('')}</ul>`:'';
     $('#tl').innerHTML=li('N’entre dans aucune case',resume(p.hors),1)+li('Plus de place',resume(p.left),1)+li('Dans les cases',resume(p.ok.filter(i=>!p.left.includes(i))))+(p.cab.length?`<h4>En cabine</h4><ul class="it">${p.cab.map(t=>`<li>${t}</li>`).join('')}</ul>`:'')+(p.sur.length?`<h4>Sur place</h4><ul class="it">${p.sur.map(t=>`<li>${t}</li>`).join('')}</ul>`:''); return; }
   if(S.tab==='instrument'){ if(S.mode!=='un'){ d.innerHTML=''; return; } const i=asm[0]?.info; if(!i) return;
-    d.innerHTML=row('Hauteur du stand',mm(i.Hs*1000))+row('Emprise au sol',`${i.encombrement[0]} × ${i.encombrement[1]} mm`)+row('Corps, largeur × prof.',`${i.corps[0]} × ${i.corps[1]} mm`)+row('Haut-parleurs',`2 × ${HP[S.hp].po}, dès ${HP[S.hp].hz} Hz`)+row('Niveau avec le BT20A',`≈ ${fr(niveau(S.hp))} dB à 1 m`)+row('Volume par haut-parleur',`≈ ${fr(i.vol/2,1)} L`)+row('Masse totale',`≈ ${fr(i.kg)} kg`)+row('Force qui fait basculer',`≈ ${fr(i.bascule,-0)} N`,i.bascule<110);
+    d.innerHTML=row('Hauteur du stand',mm(i.Hs*1000))+row('Emprise au sol',`${i.encombrement[0]} × ${i.encombrement[1]} mm`)+row('Corps, largeur × prof.',`${i.corps[0]} × ${i.corps[1]} mm`)+row('Haut-parleurs',`2 × ${HP[S.hp].po}, dès ${HP[S.hp].hz} Hz`)+row('Niveau avec l’ampli',`≈ ${fr(niveau(S.hp))} dB à 1 m`)+row('Volume par haut-parleur',`≈ ${fr(i.vol/2,1)} L`)+row('Masse totale',`≈ ${fr(i.kg)} kg`)+row('Force qui fait basculer',`≈ ${fr(i.bascule,-0)} N`,i.bascule<110);
   } else { const o=optics(S);
     const lx=v=>`≈ ${fr(Math.round(v/10)*10)} lx`, P=o.P; let h='';
     if(S.sys==='dessous'){ const f=o.f; h=f?row('Image la plus grande',`${fr(diamMax(S),2)} pi`)+row('Anneau, extérieur',`Ø ${fr((o.Rt+.02)*2,2)} m`)+row('Au sol',`Ø ${fr(o.Rf*2,2)} m`)+row('Jeu dans la jupe',`${fr(o.jeu*1000)} mm`,o.jeu<.008)+row('Trajet optique',`${fr(f.T*100)} cm`)+row('Miroir',O2(o))+row('Angle du miroir',`${fr(Math.abs(f.ph),1)}°`)+row('Inclinaison du projecteur',`${fr(Math.abs(f.tilt))}°`,Math.abs(f.tilt)>15):''; }
