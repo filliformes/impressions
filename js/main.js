@@ -12,6 +12,7 @@ import { SILICONE, INSTR, FT, DRIVER } from './data.js';
 import { STANDS } from './stands.js';
 import { buildAssembly, person, PAD_OFF } from './assembly.js';
 import { ECRANS, buildSpace, optics } from './space.js';
+import { PROJ, DEFP, PLAFOND, hautOptics } from './proj.js';
 import { drawPlan, drawElev, drawTable, drawSignal, drawChoix } from './fiche.js';
 
 const $=(q,r=document)=>r.querySelector(q), V=(x,y,z)=>new THREE.Vector3(x,y,z);
@@ -20,12 +21,12 @@ const fr=(v,d=0)=>v.toLocaleString('fr-CA',{minimumFractionDigits:d,maximumFract
 export const S = {
   tab:'espace', stand:'A', mic:'bras', open:false, silicone:'bleu', padH:980, nom:'RES',
   mode:'un', eclate:0, xray:false, cotesI:false, figure:false,
-  ecran:'fisheye', diam:7, ecranH:800, ecart:500, salle:9, vue:'ensemble', public:true, cables:true, faisceau:false, coupe:false, cotesE:false, service:false
+  ecran:'fisheye', diam:7, ecranH:800, plateH:300, montage:'droit', proj:DEFP, ecart:500, salle:9, vue:'ensemble', public:true, cables:true, faisceau:false, coupe:false, cotesE:false, service:false
 };
 const DEF={...S};
-const KEYS={tab:'t',stand:'s',mic:'m',open:'g',silicone:'c',padH:'p',nom:'n',mode:'d',ecran:'e',diam:'o',ecranH:'h',ecart:'a',salle:'r',vue:'v',xray:'x'};
-(function readHash(){ const q=new URLSearchParams(location.hash.slice(1)); for(const k in KEYS){ const v=q.get(KEYS[k]); if(v===null) continue; const t=typeof DEF[k]; S[k]=t==='number'?(+v||DEF[k]):t==='boolean'?v==='1':v; }
-  if(!STANDS[S.stand]) S.stand='A'; if(!ECRANS[S.ecran]) S.ecran='fisheye'; if(!SILICONE[S.silicone]) S.silicone='bleu'; if(!INSTR[S.nom]) S.nom='RES'; })();
+const KEYS={tab:'t',stand:'s',mic:'m',open:'g',silicone:'c',padH:'p',nom:'n',mode:'d',ecran:'e',diam:'o',ecranH:'h',plateH:'b',montage:'k',proj:'j',ecart:'a',salle:'r',vue:'v',xray:'x'};
+(function readHash(){ const q=new URLSearchParams(location.hash.slice(1)); for(const k in KEYS){ const v=q.get(KEYS[k]); if(v===null) continue; const t=typeof DEF[k]; S[k]=t==='number'?(v===''||isNaN(+v)?DEF[k]:+v):t==='boolean'?v==='1':v; }
+  if(!STANDS[S.stand]) S.stand='A'; if(!ECRANS[S.ecran]) S.ecran='fisheye'; if(!PROJ[S.proj]) S.proj=DEFP; if(S.montage!=='miroir') S.montage='droit'; S.plateH=Math.min(Math.max(S.plateH,0),600); if(!SILICONE[S.silicone]) S.silicone='bleu'; if(!INSTR[S.nom]) S.nom='RES'; })();
 function writeHash(){ const q=new URLSearchParams(); for(const k in KEYS) if(S[k]!==DEF[k]) q.set(KEYS[k],typeof S[k]==='boolean'?(S[k]?1:0):S[k]); const h=q.toString(); history.replaceState(null,'',h?'#'+h:location.pathname+location.search); }
 
 // ---------------------------------------------------------------- rendu
@@ -90,11 +91,16 @@ function applyRoom(){
     dim(g,V(-i.R,y,0),V(i.R,y,0),`${fr(S.diam,1)} pi  (${fr(i.R*2,2)} m)`,col,V(0,0,.05));
     space.inst.forEach(a=>{ const s=Math.sin(a.angle),c=Math.cos(a.angle); dim(g,V(s*i.R,.03,c*i.R),V(s*(i.Rr-.16),.03,c*(i.Rr-.16)),fr(S.ecart),col,V(c*.04,0,-s*.04)); });
     const p=space.inst.map(a=>V(Math.sin(a.angle)*i.Rr,.03,Math.cos(a.angle)*i.Rr)); p.forEach((q,k)=>dim(g,q,p[(k+1)%3],fr(i.dist,2)+' m',col,V(0,.04,0)));
-    dim(g,V(i.R+.12,0,0),V(i.R+.12,i.H,0),fr(S.ecranH),col,V(.04,0,0));
+    if(S.ecran==='haut'){ const h=space.haut, x=-(h.Rp+.25);
+      if(i.H>.02) dim(g,V(i.R+.12,0,0),V(i.R+.12,i.H,0),fr(S.plateH),col,V(.04,0,0));
+      dim(g,V(x,0,0),V(x,PLAFOND,0),'plafond 10 pi (3,05 m)',col,V(.04,0,0));
+      dim(g,V(.12,i.H+.01,-h.off),V(.12,h.mir?h.axisY:h.lensY,-h.off),fr(h.d,2)+' m de projection',col,V(.04,0,0));
+    } else dim(g,V(i.R+.12,0,0),V(i.R+.12,i.H,0),fr(S.ecranH),col,V(.04,0,0));
   }
   space.inst.forEach(a=>label(a.nom,V(Math.sin(a.angle)*i.Rr,S.padH/1000+.16,Math.cos(a.angle)*i.Rr),'n',g));
   if(S.cables||S.coupe) label('Régie : Palinopsia',space.regie.position.clone().setY(1.42),'',g);
-  if(S.coupe||S.faisceau) label(S.ecran==='ust'?'2 projecteurs ultra-courts':S.ecran==='cylindre'?'Projecteur et miroir convexe':'Projecteur, objectif fisheye',V(0,.1,.2),'',g);
+  if(S.ecran==='haut'){ const h=space.haut; if(S.coupe||S.faisceau) label(h.P.court+(h.mir?', couché, miroir à 45°':', pointé vers le bas'),V(0,h.capY-.12,-h.off),'',g); }
+  else if(S.coupe||S.faisceau) label(S.ecran==='ust'?'2 projecteurs ultra-courts':S.ecran==='cylindre'?'Projecteur et miroir convexe':'Projecteur, objectif fisheye',V(0,.1,.2),'',g);
 }
 
 // ---------------------------------------------------------------- caméras
@@ -106,6 +112,7 @@ function viewRoom(ms=1100){
   const i=space.info, k=portrait()?1.95:1, Rr=i.Rr, views={
     ensemble:[V(3.5*k,2.35*k+.2,4.35*k),V(0,.62,0),38], plan:[V(0,8.8*k,.01),V(0,0,0),38],
     joueur:[V(0,1.62,Rr+.52),V(0,.36,-.15),64], regie:[V(-i.RW/2+.72,1.72,-i.RW/2+.72),V(.6,.6,.6),50], coupe:[V(.25,.95,-Math.min(i.RW/2-.2,4.3*k)),V(0,.58,0),42], instrument:[V(Math.sin(2.0944)*(Rr+1.05)+.75,1.55,Math.cos(2.0944)*(Rr+1.05)+.8),V(Math.sin(2.0944)*Rr-.12,.74,Math.cos(2.0944)*Rr),40] };
+  if(S.ecran==='haut'){ views.ensemble=[V(-3.9*k,2.45*k+.2,4.95*k),V(0,1.1,0),40]; views.coupe=[V(.9,1.45,-Math.min(i.RW/2-.2,4.6*k)),V(0,1.38,0),50]; }
   const v=views[S.vue]||views.ensemble; S.coupe=S.vue==='coupe'; applyRoom(); goto(...v,ms);
 }
 function viewStudio(ms=1100){ const k=portrait()?1.45:1; if(S.mode==='trois') goto(V(1.15*k*(portrait()?1.25:1),1.4,4.1*k*(portrait()?1.25:1)),V(0,.68,0),34,ms); else if(S.figure) goto(V(2.75*k,1.5,-.35),V(.02,.83,.22),34,ms); else goto(V(1.12*k,1.6,2.12*k),V(.03,.72,0),34,ms); }
@@ -138,8 +145,15 @@ function panel(){
     const d=grp(S.mode==='un'?'Chiffres':'Exporter','<dl class="kv" id="ro"></dl>'); const b=el('<button class="btn" type="button">Télécharger le modèle (GLB)</button>'); b.onclick=exportGLB; d.append(b);
   } else {
     grp('Vue',seg('vue',{ensemble:'Ensemble',joueur:'Joueur',instrument:'Instrument',coupe:'Coupe',plan:'Dessus',regie:'Régie'},()=>{ viewRoom(); writeHash(); }));
-    grp('Écran',seg('ecran',Object.fromEntries(Object.entries(ECRANS).map(([k,v])=>[k,v.nom])),reE),`<p class="desc">${ECRANS[S.ecran].court}</p>`,
-      rng('diam','Diamètre',6,8,.5,v=>`${fr(v,1)} pi (${fr(v*FT,2)} m)`,reE),rng('ecranH',S.ecran==='cylindre'?'Hauteur de la toile':'Hauteur de la toile',S.ecran==='cylindre'?1200:500,S.ecran==='cylindre'?1800:1100,10,mm,reE),rng('ecart','Écart écran, instrument',250,1200,50,mm,reE),rng('salle','Côté de la salle',7,12,.5,v=>fr(v,1)+' m',reE));
+    const haut=S.ecran==='haut';
+    grp('Écran',seg('ecran',Object.fromEntries(Object.entries(ECRANS).map(([k,v])=>[k,v.nom])),()=>{ reE(); viewRoom(); }),`<p class="desc">${ECRANS[S.ecran].court}</p>`,
+      rng('diam','Diamètre',6,8,.5,v=>`${fr(v,1)} pi (${fr(v*FT,2)} m)`,reE),
+      haut?rng('plateH','Hauteur de la plateforme',0,600,10,v=>v?mm(v):'Au sol',reE):rng('ecranH','Hauteur de la toile',S.ecran==='cylindre'?1200:500,S.ecran==='cylindre'?1800:1100,10,mm,reE),
+      rng('ecart','Écart écran, instrument',250,1200,50,mm,reE),rng('salle','Côté de la salle',7,12,.5,v=>fr(v,1)+' m',reE));
+    if(haut){ const P=PROJ[S.proj];
+      grp('Projecteur',seg('proj',Object.fromEntries(Object.entries(PROJ).map(([k,v])=>[k,v.court])),reE),`<p class="desc"><strong>${P.nom}</strong>. ${P.desc}</p>`,
+        Object.assign(seg('montage',{droit:'Pointé vers le bas',miroir:'Couché, miroir à 45°'},()=>{ reE(); }),{style:'margin-top:10px'}),
+        `<p class="desc">${S.montage==='miroir'?'Le projecteur reste à plat : le caisson est plus bas et le trajet plus long, mais il faut un miroir à surface avant et l’image est inversée dans les réglages.':'La profondeur du projecteur se prend sur la hauteur : la lentille descend d’autant.'}</p>`); }
     grp('Instruments',seg('stand',Object.fromEntries(Object.entries(STANDS).map(([k,v])=>[k,v.nom])),reE),Object.assign(seg('mic',{bras:'Bras articulé',pied:'Pied de micro'},reE),{style:'margin-top:8px'}),Object.assign(seg('open',{false:'Grilles',true:'Membranes'},reE),{style:'margin-top:8px'}),'<div style="height:10px"></div>',sil);
     grp('Montrer',tog([['public','Le public',applyRoom],['cables','Les câbles',applyRoom],['faisceau','Le faisceau',applyRoom],['cotesE','Les cotes',applyRoom],['service','Lumière de service',applyRoom]]));
     grp('Optique',`<dl class="kv" id="ro"></dl>`);
@@ -153,6 +167,13 @@ function readout(){
   } else { const o=optics(S);
     if(S.ecran==='fisheye') d.innerHTML=row('Lentille, toile',`${fr(o.d*100)} cm`)+row('Angle de champ requis',`${fr(2*o.theta)}°`,o.theta>75)+row('Rapport équivalent',`${fr(o.tr,2)} : 1`)+row('Lumière au bord / au centre',`${fr(o.bord*100)} %`,o.bord<.2)+row('Pixel au centre / au bord',`${fr(o.pxC,1)} / ${fr(o.pxB,1)} mm`,o.pxB>5);
     else if(S.ecran==='ust') d.innerHTML=row('Image par projecteur',`${fr(o.ustW,2)} × ${fr(o.ustW*10/16,2)} m`)+row('Distance requise (0,24 : 1)',`${fr(o.ustD*100)} cm`)+row('Hauteur disponible',`${fr((o.H-.1)*100)} cm`,o.H-.1<o.ustD)+row('Pixel',`${fr(o.ustPx,1)} mm`);
+    else if(S.ecran==='haut'){ const h=hautOptics(S), P=h.P;
+      d.innerHTML=row('Plafond',`10 pi (${fr(PLAFOND,2)} m)`)+row(h.mir?'Axe du projecteur':'Lentille',`${fr(h.lensY,2)} m`)+row('Trajet optique',`${fr(h.d,2)} m`)
+        +row('Rapport requis',`${fr(h.trReq,2)} : 1`)+row('Rapport du modèle',P.tr[0]===P.tr[1]?`${fr(P.tr[0],2)} : 1`:`${fr(P.tr[0],2)} à ${fr(P.tr[1],2)}`,!h.fit)
+        +row('Cercle possible',h.fit?`jusqu’à ${fr(h.dMax,1)} pi`:`${fr(h.dMax,1)} pi au plus`,!h.fit)
+        +row('Image la plus petite',`${fr(h.fw,2)} × ${fr(h.fh,2)} m`)+row('Pixel',`${fr(h.pitch,1)} mm`)+row('Pixels sur le cercle',`${fr(h.pxCirc)} / ${fr(P.res[1])}`)
+        +row('Éclairement',`≈ ${fr(h.lux)} lux`)+(h.mir?row('Miroir',`≈ ${fr(h.mirW*100)} × ${fr(h.mirH*100)} cm`):'')+row('Projecteur',`${fr(P.kg,1)} kg, ${P.dB} dB`);
+    }
     else d.innerHTML=row('Toile',`${fr(2*Math.PI*o.R,2)} × ${fr(Math.max(o.H,1.2),2)} m`)+row('Pixel sur le tour (1200 px)',`≈ ${fr(2*Math.PI*o.R/(Math.PI*800)*1000,1)} mm`)+row('Surface',`${fr(2*Math.PI*o.R*Math.max(o.H,1.2),1)} m²`);
     d.innerHTML+=row('Distance entre instruments',`${fr(space?.info.dist||0,2)} m`);
   }
@@ -205,7 +226,7 @@ function tab(t,ms=0){
   $('#labels').innerHTML=''; $('#labels').appendChild(L2.domElement); L2.domElement.innerHTML='';
   if(t==='espace'){ if(dirtyRoom||!space) buildRoom(); dirtyRoom=false; panel(); viewRoom(ms); $('#hint').textContent='Glisser pour tourner, molette pour s’approcher'; }
   if(t==='instrument'){ buildStudio(); dirtyStudio=false; panel(); viewStudio(ms); $('#hint').textContent='Glisser le fond pour tourner, glisser l’instrument pour l’incliner'; }
-  if(t==='cotes'){ drawPlan($('#plan'),S); drawElev($('#elev'),S); drawTable($('#tbl'),S); } if(t==='signal') drawSignal($('#sig')); if(t==='choix') drawChoix($('#choix'),S);
+  if(t==='cotes'){ drawPlan($('#plan'),S); drawElev($('#elev'),S); drawTable($('#tbl'),S); } if(t==='signal') drawSignal($('#sig'),S); if(t==='choix') drawChoix($('#choix'),S);
   writeHash();
 }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));

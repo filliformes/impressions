@@ -3,12 +3,14 @@ import * as THREE from 'three';
 import { M, mesh, cbox, ccyl, rod, tube, dots, disposeTree } from './util.js';
 import { FT, INSTR } from './data.js';
 import { buildAssembly, person } from './assembly.js';
+import { PLAFOND, MIRROR_GAP, hautOptics } from './proj.js';
 
 const V=(x,y,z)=>new THREE.Vector3(x,y,z), TAU=Math.PI*2;
 export const ECRANS = {
   fisheye:{ nom:'Disque, un fisheye', court:'Toile horizontale. Un projecteur au centre, objectif fisheye vers le haut.' },
   ust:{ nom:'Disque, deux ultra-courts', court:'Toile horizontale. Deux projecteurs ultra-courte focale au centre, un par demi-cercle, raccord par fondu.' },
-  cylindre:{ nom:'Cylindre 360°', court:'Toile tendue sur le tour. Projecteur au centre vers un miroir convexe.' }
+  cylindre:{ nom:'Cylindre 360°', court:'Toile tendue sur le tour. Projecteur au centre vers un miroir convexe.' },
+  haut:{ nom:'Plateforme, par le haut', court:'Plateforme basse peinte en blanc mat. Un projecteur dans le caisson d’un portique à trois pieds, sous le plafond, pointé vers le bas.' }
 };
 export const LENS_H=.32, WALL=.05;
 
@@ -62,7 +64,7 @@ export function optics(s){
 }
 
 export function buildSpace(s,lists){
-  const g=new THREE.Group(), R=s.diam*FT/2, H=s.ecranH/1000, RW=s.salle, RH=4.2, out={ g, inst:[], lights:[] };
+  const haut=s.ecran==='haut', g=new THREE.Group(), R=s.diam*FT/2, H=haut?s.plateH/1000:s.ecranH/1000, RW=s.salle, RH=PLAFOND, out={ g, inst:[], lights:[] };
   // --- sol et murs
   const floor=mesh(new THREE.PlaneGeometry(RW,RW),new THREE.MeshStandardMaterial({color:'#2c2e36',roughness:.6,metalness:.05}),false); floor.rotation.x=-Math.PI/2; g.add(floor);
   const wm=new THREE.MeshStandardMaterial({color:'#2b2e39',roughness:1,side:THREE.FrontSide});
@@ -71,12 +73,15 @@ export function buildSpace(s,lists){
     // plis du rideau
     for(let i=0;i<Math.round(RW*2.4);i++){ const f=mesh(new THREE.CylinderGeometry(.07,.07,RH,8,1,true,0,Math.PI),wm,false); f.scale.z=.35; f.rotation.y=-Math.PI/2; const h=new THREE.Group(); h.add(f); h.position.set(-RW/2+.2+i/2.4,0,0); w.add(h); f.rotation.set(0,-Math.PI/2,0); }
   });
+  // plafond à 10 pi (visible par en dessous seulement)
+  const ceil=mesh(new THREE.PlaneGeometry(RW,RW),new THREE.MeshStandardMaterial({color:'#1c1e26',roughness:1}),false); ceil.rotation.x=Math.PI/2; ceil.position.y=RH; g.add(ceil);
   // --- écran
   const scr=new THREE.Group(); g.add(scr);
   const cyl=s.ecran==='cylindre', ch=cyl?Math.max(H,1.2):0;
   const mat=screenMaterial(R,cyl); out.screenMat=mat;
   const halfSkirt=[];
-  if(!cyl){
+  if(haut) buildHaut(s,R,H,scr,mat,halfSkirt,out);
+  else if(!cyl){
     const disc=new THREE.Mesh(new THREE.CircleGeometry(R-.012,128).rotateX(-Math.PI/2),mat); disc.position.y=H+.002; scr.add(disc); out.disc=disc;
     // jante et pied en tôle blanche
     const rim=[[R-.03,H-.05],[R,H-.05],[R,H+.004],[R-.012,H+.004]].map(p=>new THREE.Vector2(...p)); scr.add(mesh(new THREE.LatheGeometry(rim,160),M.white));
@@ -100,7 +105,8 @@ export function buildSpace(s,lists){
   const beams=new THREE.Group(); scr.add(beams); out.beams=beams;
   const line=pts=>beams.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),edge));
   const floorBox=(x,z,w,d,h)=>cbox(pj,[x-w/2,.02,z-d/2],[x+w/2,h,z+d/2],M.white,.015);
-  if(s.ecran==='ust'){
+  if(haut) hautBeams(out.haut,Math.min(R,out.haut.circ/2+.02),H,beams,beamMat,line);
+  else if(s.ecran==='ust'){
     const o=optics(s), yl=Math.max(H-o.ustD,.12);
     [1,-1].forEach(k=>{ const x=k*.24, zc=-k*.16; floorBox(x,zc,.42,.2,Math.max(yl-.02,.2)); cbox(pj,[x-.1,yl-.03,zc-.05],[x+.1,yl,zc+.05],M.pad,.004);
       const l=V(x,yl,zc), w=R-.02, q=[]; for(let n=0;n<=36;n++){ const a=-.04+(Math.PI+.08)*n/36; q.push(V(Math.cos(a)*w,H,k*Math.sin(a)*w)); }
@@ -115,8 +121,9 @@ export function buildSpace(s,lists){
       for(let i=0;i<12;i++){ const a=i/12*TAU,S=Math.sin(a),K=Math.cos(a); line([V(0,ly,0),V(S*.14,my-.12,K*.14),V(S*R,.2,K*R)]); line([V(0,ly,0),V(S*.06,my-.15,K*.06),V(S*R,.16+ch,K*R)]); } }
   }
   // moyeu : commutateur + alimentation
-  if(!cyl||true){ const hx=R*.55, a=Math.PI/3; const hub=cbox(pj,[-.16,.02,-.1],[.16,.14,.1],M.dark,.006); hub.position.set(Math.sin(a+Math.PI)*hx,.08,Math.cos(a+Math.PI)*hx); hub.rotation.y=a; }
-  out.setCut=v=>{ if(halfSkirt[1]) halfSkirt[1].visible=!v; mat.uniforms.uAlpha.value=v?.55:1; if(out.air) out.air.visible=!v; };
+  { const hx=R*.55, a=Math.PI/3; const hub=cbox(pj,[-.16,.02,-.1],[.16,.14,.1],M.dark,.006); hub.position.set(Math.sin(a+Math.PI)*hx,.08,Math.cos(a+Math.PI)*hx); hub.rotation.y=a;
+    if(haut&&H<.18) hub.position.set(0,.08,-(out.haut.Rp+.3)); }
+  out.setCut=v=>{ if(halfSkirt[1]) halfSkirt[1].visible=!v; mat.uniforms.uAlpha.value=v&&!haut?.55:1; if(out.air) out.air.visible=!v; if(out.cutHaut) out.cutHaut.forEach(m=>m.visible=!v); };
   out.setBeams=v=>{ beams.visible=v; };
 
   // --- instruments
@@ -155,6 +162,74 @@ export function buildSpace(s,lists){
   const A=V(-RW/2+1.6,.01,-RW/2+1.6), dA=A.clone().setY(0).normalize();
   [-.03,0,.03].forEach((o,k)=>{ const n=V(dA.z,0,-dA.x).multiplyScalar(o); tube(cables,[dA.clone().multiplyScalar(R*.5).add(n).setY(.02),dA.clone().multiplyScalar(R-.06).add(n).setY(.01),dA.clone().multiplyScalar(R+.8).add(n).setY(.012),A.clone().add(n)],[.0035,.004,.005][k],[M.pcb,M.red,M.cable][k],40); });
   const tl=A.length()-R-.1, tr=mesh(new THREE.BoxGeometry(.24,.02,tl),M.table); tr.position.copy(dA.clone().multiplyScalar(R+.05+tl/2)).setY(.008); tr.rotation.y=Math.atan2(dA.x,dA.z); cables.add(tr);
+  // portique : image et courant montent par le pied du côté régie
+  if(haut){ const P=out.haut, z=-P.Rp, f=[V(0,.012,-(R*.5)),V(0,.012,-(R-.08)),V(0,.01,z+.25),V(0,.03,z+.06),V(.0,.12,z+.045)];
+    if(H>=.18) out.cutHaut.push(tube(cables,f,.005,M.red,40)); const up=tube(cables,[V(0,.12,z+.045),V(0,P.top-.12,z+.045),V(0,P.top-.1,z+.2)],.005,M.red,20); out.cutHaut.push(up);
+    const rp=mesh(new THREE.BoxGeometry(.16,.014,.5),M.table); rp.position.set(0,.008,z+.4); cables.add(rp); }
   out.info={ R,H,Rr,RW,RH,dist:2*Rr*Math.sin(Math.PI/3) };
   return out;
+}
+
+// ---------------------------------------------------------------- par le haut
+// Pieds entre les instruments, traverses vers un caisson au centre. Le petit côté de l'image suit la traverse côté régie (-z).
+function buildHaut(s,R,H,scr,mat,halfSkirt,out){
+  const o=hautOptics(s), P=o.P, Rp=R+Math.max(.24,s.ecart/1000*.62), top=o.top, bs=.08, ps=.07;
+  const h={ ...o, Rp }; out.haut=h; out.cutHaut=[];
+  // plateforme (ou vinyle au sol)
+  // si le projecteur n'atteint pas le diamètre, l'image est plus petite que la plateforme
+  const rI=Math.min(R-(H>.02?.012:0),o.circ/2), yT=H>.02?H+.002:.003; mat.uniforms.uA.value=rI;
+  if(rI<R-.02){ const ring=mesh(new THREE.RingGeometry(rI,R-(H>.02?.012:0),128).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:'#bfc0bd',roughness:.9}),false); ring.position.y=yT-.0005; scr.add(ring); }
+  if(H>.02){
+    const disc=new THREE.Mesh(new THREE.CircleGeometry(rI,128).rotateX(-Math.PI/2),mat); disc.position.y=yT; scr.add(disc); out.disc=disc;
+    const rim=[[R-.03,H-.04],[R,H-.04],[R,H+.004],[R-.012,H+.004]].map(p=>new THREE.Vector2(...p)); scr.add(mesh(new THREE.LatheGeometry(rim,160),M.white));
+    [0,1].forEach(k=>{ const sk=mesh(new THREE.CylinderGeometry(R-.045,R-.045,H-.04,96,1,true,k?Math.PI/2:-Math.PI/2,Math.PI),M.skirt,false); sk.position.y=(H-.04)/2; scr.add(sk); halfSkirt.push(sk); });
+  } else {
+    const disc=new THREE.Mesh(new THREE.CircleGeometry(rI,128).rotateX(-Math.PI/2),mat); disc.position.y=yT; scr.add(disc); out.disc=disc;
+  }
+  // trois pieds, trois traverses
+  const fr=new THREE.Group(); scr.add(fr); h.posts=[];
+  for(let k=0;k<3;k++){ const a=TAU/6+k*TAU/3, x=Math.sin(a)*Rp, z=Math.cos(a)*Rp; h.posts.push([x,z,a]);
+    const p=cbox(fr,[-ps/2,0,-ps/2],[ps/2,top,ps/2],M.white,.006); p.position.set(x,top/2,z); p.rotation.y=a;
+    const pl=cbox(fr,[-.17,0,-.17],[.17,.014,.17],M.steel,.004); pl.position.set(x,.007,z); pl.rotation.y=a;      // platine lestée
+    const b=new THREE.Group(); b.position.set(0,top-bs/2,0); b.rotation.y=a; fr.add(b); const bm=cbox(b,[-bs/2,-bs/2,0],[bs/2,bs/2,Rp+ps/2],M.white,.006);
+    if(k===1) out.cutHaut.push(p,pl,bm); }                                                          // le pied côté régie s'efface en coupe
+  // caisson et projecteur
+  const cx=0, cz=-o.off, W=P.dim[0], Dp=P.dim[1], Hp=P.dim[2], cs=new THREE.Group(); cs.position.set(cx,0,cz); scr.add(cs); h.cs=cs;
+  const body=new THREE.Group(); cs.add(body);
+  const pb=new THREE.MeshPhysicalMaterial({color:P.col||'#e6e6e3',roughness:.45,clearcoat:.2});
+  if(!o.mir){
+    // pointé vers le bas : profondeur à la verticale, objectif en bas
+    cbox(body,[-W/2,o.lensY+.03,-Hp/2],[W/2,o.rear,Hp/2],pb,.02); ccyl(body,.055,.05,[0,o.lensY+.025,0],M.black,'y',.05); ccyl(body,.045,.004,[0,o.lensY+.002,0],M.pad,'y');
+    const rc=Math.max(.3,Math.hypot(W,Hp)/2+.07), y0=o.lensY-.05;
+    const shell=[[rc-.01,y0],[rc,y0+.01],[rc,top],[0,top]].map(p=>new THREE.Vector2(...p));
+    const half=[0,1].map(k=>{ const m=mesh(new THREE.LatheGeometry(shell,96,k?Math.PI/2:-Math.PI/2,Math.PI),M.white); cs.add(m); return m; });   // la moitié côté régie (-z) s'ouvre en coupe
+    const ring=mesh(new THREE.RingGeometry(.075,rc,96).rotateX(Math.PI/2),M.white); ring.position.y=y0; cs.add(ring);
+    out.cutHaut.push(half[1]); h.capR=rc; h.capY=y0;
+    // prises d'air : même trame que le case
+    const L=[]; for(let j=0;j<5;j++) for(let i=0;i<120;i++){ const a=i/120*TAU, w=.5+.5*Math.cos(a*3+j*.5), r=.0016+.0038*w*(1-j/6); L.push([V(Math.sin(a)*(rc+.0008),top-.06-j*.018,Math.cos(a)*(rc+.0008)),V(Math.sin(a),0,Math.cos(a)),r]); }
+    const air=dots(L,new THREE.MeshBasicMaterial({color:'#3a4468'})); cs.add(air); out.cutHaut.push(air);
+  } else {
+    // couché le long de la traverse côté régie (-z), objectif vers un miroir à 45° au centre du caisson
+    const z0=MIRROR_GAP+.01, y=o.axisY;
+    cbox(body,[-W/2,y-Hp/2,-(z0+Dp)],[W/2,y+Hp/2,-(z0+.03)],pb,.02); ccyl(body,.055,.04,[0,y,-(z0+.01)],M.black,'z');
+    const mir=mesh(new THREE.PlaneGeometry(o.mirW,o.mirH),M.magnet); mir.position.set(0,y,0); mir.rotation.x=Math.PI*.75; body.add(mir);
+    const mz=o.mirH/2*Math.SQRT1_2, zA=mz+.05, zB=-(z0+Dp+.06), yA=y-Math.max(Hp/2,mz)-.05, wb=Math.max(W,o.mirW)/2+.06;
+    const box=new THREE.Group(); cs.add(box);
+    const sides=[ [[-wb,yA,zA-.012],[wb,top,zA]], [[-wb,yA,zB],[wb,top,zB+.012]], [[-wb,yA,zB],[-wb+.012,top,zA]], [[wb-.012,yA,zB],[wb,top,zA]], [[-wb,top-.012,zB],[wb,top,zA]], [[-wb,yA,zB],[wb,yA+.012,-mz-.03]] ];
+    sides.forEach((c,i)=>{ const m=cbox(box,c[0],c[1],M.white,.004); if(i===1||i===2||i===3||i===5) out.cutHaut.push(m); });
+    h.capR=Math.max(wb,(zB-zA)/2); h.capY=yA;
+  }
+}
+function hautBeams(h,R,H,beams,beamMat,line){
+  const src=V(0,h.mir?h.axisY:h.lensY,-h.off), yi=H+.004, q=[];
+  for(let n=0;n<=96;n++){ const a=n/96*TAU; q.push(V(Math.sin(a)*(R-.02),yi,Math.cos(a)*(R-.02))); }
+  const tri=[]; q.forEach((p,n)=>{ if(n<q.length-1) tri.push(src,q[n+1],p); }); beams.add(new THREE.Mesh(new THREE.BufferGeometry().setFromPoints(tri),beamMat));
+  q.forEach((p,n)=>{ if(n%8===0&&n<96) line([src,p]); });
+  // cadre complet : le noir du projecteur déborde jusqu'au sol
+  const k=h.vY/h.d, fw=h.fw*k/2, fh=h.fh*k/2, c=[[-fw,-fh],[fw,-fh],[fw,fh],[-fw,fh]].map(([x,z])=>V(x,.006,z));
+  const dim=new THREE.LineBasicMaterial({color:'#8fa0d8',transparent:true,opacity:.35});
+  c.forEach(p=>beams.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([src,p]),dim)));
+  beams.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(c),dim));
+  const sp=new THREE.Mesh(new THREE.PlaneGeometry(fw*2,fh*2).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:'#8fa0d8',transparent:true,opacity:.05,depthWrite:false,blending:THREE.AdditiveBlending})); sp.position.y=.005; beams.add(sp);
+  if(h.mir) line([V(0,h.axisY,-h.off-MIRROR_GAP),src]);
 }
