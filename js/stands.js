@@ -3,11 +3,13 @@ import * as THREE from 'three';
 import { M, mesh, cbox, ccyl, loft, dots, rod, tube, silicone } from './util.js';
 import { HP } from './data.js';
 import { trappe, placeAmpli, buildInterieur, buildEclate } from './interieur.js';
+import { dimsTete, buildTete } from './tete.js';
 
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 export const STANDS = {
   A:{ nom:'Monolithe', court:'Bloc de tôle pliée, épaulement à 45° repris du capot, perforations reprises du case.' },
-  B:{ nom:'Losange',   court:'Volume à facettes, large aux haut-parleurs, qui se resserre vers l’instrument et vers le pied.' }
+  B:{ nom:'Losange',   court:'Volume à facettes, large aux haut-parleurs, qui se resserre vers l’instrument et vers le pied.' },
+  C:{ nom:'Tête stéréo', court:'Colonne mince et tête imprimée en deux moitiés : deux large bande de 4 po en V, tournés vers l’écran, chacun dans un caisson clos de 2 L. L’ampli est dans la tête.' }
 };
 
 // haut-parleur coaxial dessiné en 10 po puis mis à l'échelle, face vers +x, plan de montage à x = 0
@@ -39,6 +41,7 @@ function halftone(x,y,hz,y0,y1,rc,s,pitch=.0085){
 // cotes d'un stand selon le haut-parleur (m). sec : profil de bas en haut {y,w,d,c}
 const SEAT_W=.2704, SEAT_D=.1829;
 export function standDims(kind,Hs,hp){
+  if(kind==='C') return dimsTete(Hs);
   const H=HP[hp], d=H.d/1000, dp=H.depth/1000, k=d/.261, lit=2*(dp+.012)+.018, o={ kind,hp,H,d,k,Hs };
   if(kind==='A'){
     const W=Math.max(SEAT_W+.006,lit), D=Math.max(SEAT_D+.006,d+.04), e=Math.max((W-SEAT_W)/2,(D-SEAT_D)/2)+.0015, sh=Hs-e, ys=sh-.035-d/2, yh=ys-d/2-.045, F=Math.min(.46,Math.max(.36,D+.16));
@@ -59,6 +62,7 @@ export function standDims(kind,Hs,hp){
 }
 // rend { group, info }
 export function buildStand(kind,Hs,{open=false,xray=false,hp='hp10'}={}){
+  if(kind==='C') return buildTete(Hs,{open,xray});
   const g=new THREE.Group(), shell=new THREE.Group(), inside=new THREE.Group(), m=standDims(kind,Hs,hp), { W,D,ys,sh,yh,k }=m; g.add(shell,inside);
   const skin = xray ? M.white.clone() : M.white;
   if(xray){ skin.transparent=true; skin.opacity=.16; skin.depthWrite=false; skin.side=THREE.DoubleSide; }
@@ -108,10 +112,10 @@ export function buildMic(type,Hs,m){
     tube(g,[tail,tail.clone().addScaledVector(dir,-.05).add(V(0,-.04,0)),J.clone().add(V(.01,-.03,.02)),V(bx+.02,.9,bz+.01),V(bx+.018,.3,bz),V(bx-.05,.02,bz-.12),V(.15,.012,-.34),V(.05,.02,-.26),V(.03,.12,-.22)],.0033,M.cable,120);
   } else {
     // bras articulé en tube d'acier blanc, fixé au coin arrière droit du stand
-    const yP=m.kind==='B'?Hs-.13:m.sh-.04, [hw,hd]=m.at(yP), P0=V(hw-.028,yP,-hd+.02);
+    const C=m.kind==='C', yP=m.kind==='B'?Hs-.13:C?Hs-.08:m.sh-.04, [hw,hd]=m.at(yP), P0=C?V(m.W/2+.006,yP,.02):V(hw-.028,yP,-hd+.02);
     const T=grip.clone().add(V(.0,-.022,0));
-    const fl=mesh(new THREE.CylinderGeometry(.02,.02,.05,32),M.dark); fl.position.copy(P0).add(V(.01,0,-.03)); g.add(fl);
-    const P0b=V(P0.x+.01,P0.y,P0.z-.03), Pt=V(P0b.x,Hs+.26,P0b.z);
+    const fl=mesh(new THREE.CylinderGeometry(.02,.02,.05,32),M.dark); fl.position.copy(P0).add(V(.01,0,C?0:-.03)); g.add(fl); if(C) cbox(g,[m.W/2-.001,yP-.03,-.005],[m.W/2+.008,yP+.03,.045],M.dark,.003);
+    const P0b=V(P0.x+.01,P0.y,P0.z-(C?0:.03)), Pt=V(P0b.x,Hs+.26,P0b.z);
     rod(g,P0b,Pt,.0085,M.white);
     const l1=.36,l2=.33, dd=T.clone().sub(Pt), L=Math.min(dd.length(),l1+l2-.01), u=dd.clone().normalize();
     const a=(l1*l1-l2*l2+L*L)/(2*L), h=Math.sqrt(Math.max(l1*l1-a*a,0)), up=V(0,1,0).addScaledVector(u,-u.y).normalize().addScaledVector(V(1,0,0),.35).normalize();

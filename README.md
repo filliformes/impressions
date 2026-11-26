@@ -13,10 +13,12 @@ Chaque instrument tourne sur [Pandore](https://github.com/filliformes/pandore) e
 1. le **PCB FLOU** et ses contrôles (6 potentiomètres, 2 pads XY, 3 boutons, 1 slider, écran et encodeur)
 2. le **case** en métal blanc, qui contient Pandore et FLOU ; son côté droit est plein et rigide
 3. la **base molle** en silicone translucide aimanté, éclairée par une bande LED que pilote Pandore : l'instrument bouge et revient en place, ce qui permet de jouer de l'IMU sans le sortir de son stand
-4. le **stand** (Monolithe ou Losange), avec deux haut-parleurs coaxiaux dos à dos (gauche et droite), leurs filtres et un petit ampli en classe D
+4. le **stand** : choix actuel, une **tête stéréo** sur une colonne mince, avec deux large bande FaitalPRO 4FE42 ouverts en V vers l'écran et un petit ampli en classe D (Fosi TB10A). Les stands Monolithe et Losange, avec deux coaxiaux dos à dos, restent dans la maquette
 5. un **micro** dynamique, sur pied ou sur bras articulé
 
-Les haut-parleurs se choisissent entre 10, 8, 6,5 et 5 po. Tout le stand suit.
+![La tête stéréo, éclatée](img/tete-eclatee.jpg)
+
+Sur les stands Monolithe et Losange, les haut-parleurs se choisissent entre 10, 8, 6,5 et 5 po. Tout le stand suit.
 
 ![Les quatre tailles de haut-parleurs](img/tailles.jpg)
 

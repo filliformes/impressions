@@ -46,6 +46,11 @@ export const HP = {
   hp65:{ po:'6,5 po', nom:'B&C 6CXN36', w:100, fc:2, d:180, cut:146, depth:91, kg:.7, hz:90, db:90, src:'https://www.bcspeakers.com/en/products/coaxial/6/8/6CXN36' },
   hp5:{ po:'5 po', nom:'B&C 5CXN36', w:100, fc:2, d:150, cut:123, depth:87, kg:.65, hz:94, db:89, src:'https://www.bcspeakers.com/en/products/coaxial/5/8/5CXN36' }
 };
+// Large bande de la tête stéréo (fiche FaitalPRO, prix Solen du 26 novembre 2026). vb : caisson clos par haut-parleur (L)
+export const LB = {
+  f4:{ po:'4 po', nom:'FaitalPRO 4FE42', d:129.85, cut:91.5, depth:54.1, kg:.39, hz:100, db:94, w:40, fs:110, vas:1.9, xmax:2.83, sd:50.9, prix:98.35,
+    src:'https://solen.ca/en/products/FaitalPRO-4FE42-8-4in-Professional-Fullrange-8-Ohm', fiche:'https://solen.ca/storage/media/t41mHPJekSCV0bHiVS1OFz2FCSoT8YGd5jMk8XnG.pdf' }
+};
 export const SILICONE = { clair:'#e9eef0', bleu:'#2b316e', noir:'#1d1e22', rouge:'#b8282b', gris:'#8c9097', jaune:'#d2a62c' };
 export const INSTR = {
   RES:    { nom:'RES',    role:'les traces du passé', led:'#4f7dff' },

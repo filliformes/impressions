@@ -1,7 +1,7 @@
 // Tournée : ce qui voyage, et comment ça entre dans des cases Pelican en soute.
 import * as THREE from 'three';
 import { cbox, rod } from './util.js';
-import { HP, PELICAN } from './data.js';
+import { HP, LB, PELICAN } from './data.js';
 import { standDims } from './stands.js';
 import { PAD_OFF } from './assembly.js';
 import { optics, GAP, secteurs } from './optics.js';
@@ -24,12 +24,15 @@ export function items(s){
   const O=optics(s), H=HP[s.hp], Hs=s.padH/1000-PAD_OFF, m=standDims(s.stand,Hs,s.hp), max=Math.max(...PELICAN[s.tCase].int)/100-.035;
   add('inst','Instrument (case, FLOU, Pandore)',3,.2664,.1789,.105,3.2);
   add('inst',s.tBase==='creuse'?'Base molle creuse':'Base molle pleine',3,.2664,.1789,.08,s.tBase==='creuse'?1.9:4.3);
+  if(s.stand==='C'){ const L=m.yh-m.y0, p=parts(L,max); add('son','Tête stéréo : deux 4FE42 et ampli',3,m.W,m.D+m.pd,m.hh,m.teteKg); add('stand',`Colonne d’alu 60 × 60, en ${p>1?p+' bouts':'un bout'}`,3,L/p,.062,.062*p,m.colKg+.2); add('stand','Capot du socle, à plat',3,.22,.2,.012,.35); }
+  else {
   const hb=(s.stand==='A'?Hs:m.sh)-m.yh, wood=2*(m.W*m.D+m.W*hb+m.D*hb)*.009*700;
   add('son',`Caisson ${H.po}, ampli et filtres compris`,3,m.W,m.D,hb,wood+2*H.kg+AMPLI.kg+.3);
   const hc=m.yh-m.y0, hc2=s.stand==='B'?Hs-m.sh:0, L=hc+hc2, p=parts(L,max);
   add('stand',`Mât du stand, en ${p>1?p+' bouts':'un bout'}`,3,L/p,.042*p,.042,L*kt(.038,.003)+.15);
   if(s.tCol==='tole'){ const q=parts(Math.max(hc,hc2),max); add('stand','Tôles d’alu à plat (1,5 mm)',3,Math.max(m.W,m.D),Math.max(hc,hc2)/q,(hc2?8:4)*q*.002,2*(m.W+m.D)*L*.0015*2700*(hc2?.8:1)); }
   else add('stand','Housse de tissu tendu',3,.26,.2,.025,.35);
+  }
   add('stand','Pied en croix pliante',3,Math.max(...m.F)*1.12,.06,.045,1.1);
   if(s.mic==='bras'&&s.tMic) add('stand','Bras de micro plié',3,.42,.06,.045,.9); else sur.push('Pieds de micro');
   if(s.tCab) cab.push('Trois micros'); else add('stand','Micro',3,.19,.07,.06,.35);

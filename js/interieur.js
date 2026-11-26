@@ -11,7 +11,7 @@ export const ampliW=z=>(AMPLI.volt/(z+.24))**2*z/2;
 export const niveau=hp=>HP[hp].db+10*Math.log10(ampliW(8));
 
 // révolution d'un profil fermé (r, x) autour de x ; cut : on ne garde que la moitié arrière, avec ses tranches
-function rev(g,pts,mat,cut,seg=72){
+export function rev(g,pts,mat,cut,seg=72){
   const P=pts.map(p=>new THREE.Vector2(p[0],p[1])); P.push(P[0].clone());
   const m=mesh(new THREE.LatheGeometry(P,seg,cut?PI/2:0,cut?PI:PI*2).rotateZ(-PI/2),mat); g.add(m);
   if(cut){ const cm=CUT(mat); for(const s of [1,-1]){ const sh=new THREE.Shape(); pts.forEach(([r,x],i)=>i?sh.lineTo(x,s*r):sh.moveTo(x,s*r)); sh.closePath(); const f=mesh(new THREE.ShapeGeometry(sh),cm,false); f.position.z=.0004; g.add(f); } }
@@ -19,7 +19,7 @@ function rev(g,pts,mat,cut,seg=72){
 }
 const CC=new Map(); const CUT=m=>{ if(!CC.has(m)){ const c=m.clone(); c.side=THREE.DoubleSide; c.color=c.color.clone().lerp(new THREE.Color('#ffffff'),.3); c.metalness=Math.min(c.metalness,.3); CC.set(m,c); } return CC.get(m); };
 // bande mince suivant une courbe (r, x), d'épaisseur t
-const bande=(c,t)=>[...c,...[...c].reverse().map(([r,x])=>[r,x-t])];
+export const bande=(c,t)=>[...c,...[...c].reverse().map(([r,x])=>[r,x-t])];
 
 // haut-parleur coaxial démonté, dessiné en 10 po puis mis à l'échelle. Face vers +x. Rend des pièces avec leur écart (userData.ex, m)
 export function hpDetail(hp,{cut=false}={}){
@@ -61,7 +61,7 @@ export function ampli(){
   const t=part(V(0,.105,0),'Capot'); cbox(t,[-w/2,h/2-.002,0],[w/2,h/2,d-.0005],M.black,.0005); for(const s of [-1,1]) cbox(t,[s>0?w/2-.0015:-w/2-.0005,-.003,0],[s>0?w/2+.0005:-w/2+.0015,h/2-.001,d-.0005],M.black); for(let i=0;i<7;i++) cbox(t,[-.032,h/2-.0005,.03+i*.009],[.032,h/2+.0003,.034+i*.009],M.hole);
   g.userData.parts=L; g.userData.setE=e=>L.forEach(q=>q.position.copy(q.userData.ex).multiplyScalar(e)); return g;
 }
-const brique=(l,h,w)=>{ const g=new THREE.Group(); cbox(g,[-l/2,0,-w/2],[l/2,h,w/2],M.black,.005); cbox(g,[-l*.3,h,-w*.25],[l*.3,h+.0004,w*.25],M.grey); ccyl(g,.004,.02,[l/2+.008,h/2,0],M.cable,'x'); return g; };
+export const brique=(l,h,w)=>{ const g=new THREE.Group(); cbox(g,[-l/2,0,-w/2],[l/2,h,w/2],M.black,.005); cbox(g,[-l*.3,h,-w*.25],[l*.3,h+.0004,w*.25],M.grey); ccyl(g,.004,.02,[l/2+.008,h/2,0],M.cable,'x'); return g; };
 
 // trappe arrière : façade de l'ampli, prise de courant, interrupteur, fentes. Plan z = 0, dehors vers -z
 export function trappe(){

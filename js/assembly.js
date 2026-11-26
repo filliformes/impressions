@@ -41,17 +41,18 @@ export function buildAssembly(o){
 
 function buildCables(g,Hs,y0,m){
   const at=n=>{ const o=BACK.find(b=>b[0]===n); return { x:(PCB.x+o[1]-C.cx)/1000, y:y0+(PCB.zTop+o[5])/1000, z:-(C.y1+o[6]-C.cy)/1000 }; };
-  const inY=m.kind==='B'?Hs-.15:Math.min(m.sh-.06,Hs-.13), inZ=-m.at(inY)[1];
+  const tc=m.kind==='C', inY=tc?Hs:m.kind==='B'?Hs-.15:Math.min(m.sh-.06,Hs-.13), inZ=tc?-m.D/2-m.pd*.45:-m.at(inY)[1];
   const run=(p,len,rp,rc,mat,ix)=>{
     const b=mesh(new THREE.CylinderGeometry(rp,rp*.85,len,24).rotateX(-Math.PI/2),mat); b.position.set(p.x,p.y,p.z-len/2); g.add(b);
     const e=V(p.x,p.y,p.z-len);
-    tube(g,[e.clone().add(V(0,0,.01)),e,e.clone().add(V(0,-.012,-.03)),V(p.x*.8+ix*.2,Hs+.03,p.z-len-.028),V(ix+.3*(p.x-ix),Hs-.06,inZ-.075),V(ix,inY,inZ-.03),V(ix,inY,inZ+.03)],rc,M.cable,90);
+    tube(g,[e.clone().add(V(0,0,.01)),e,e.clone().add(V(0,-.012,-.03)),V(p.x*.8+ix*.2,Hs+.03,p.z-len-.028),...(tc?[V(ix+.3*(p.x-ix),Hs+.05,inZ),V(ix,Hs+.012,inZ),V(ix,Hs-.03,inZ)]:[V(ix+.3*(p.x-ix),Hs-.06,inZ-.075),V(ix,inY,inZ-.03),V(ix,inY,inZ+.03)])],rc,M.cable,90);
   };
   run(at('IN1'),.062,.0098,.0032,M.dark,.0);                         // XLR micro
   const out=at('OUT'); run({...out,y:out.y+.0084},.05,.0072,.003,M.dark,-.03); run({...out,y:out.y-.0084},.05,.0072,.003,M.dark,-.015); // TRS vers l'ampli
   run(at('ETH1'),.036,.0072,.003,M.pcb,.02);                         // réseau
   run(at('DC'),.03,.005,.0025,M.cable,.035);                         // alimentation
-  { const c=mesh(new THREE.CylinderGeometry(.055,.055,.006,32).rotateX(Math.PI/2).scale(1.1,.36,1),M.black); c.position.set(0,inY,inZ); if(m.kind==='B') c.rotation.x=Math.atan2(m.at(m.sh)[1]-m.at(Hs)[1],Hs-m.sh); g.add(c); }
+  if(tc){ const c=mesh(new THREE.CylinderGeometry(.045,.045,.004,32).scale(1.1,1,.36),M.black); c.position.set(0,Hs+.001,inZ); g.add(c); }
+  else { const c=mesh(new THREE.CylinderGeometry(.055,.055,.006,32).rotateX(Math.PI/2).scale(1.1,.36,1),M.black); c.position.set(0,inY,inZ); if(m.kind==='B') c.rotation.x=Math.atan2(m.at(m.sh)[1]-m.at(Hs)[1],Hs-m.sh); g.add(c); }
 }
 
 // --- silhouettes d'échelle
